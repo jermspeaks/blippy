@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createBlipSchema, type CreateBlipInput } from "@/lib/validations";
 import { createBlip } from "@/actions/blips";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -60,10 +60,11 @@ export function BlipForm({
             <FormItem>
               <FormLabel>Content</FormLabel>
               <FormControl>
-                <Input
+                <Textarea
                   placeholder="What's on your mind?"
                   {...field}
                   value={field.value ?? ""}
+                  className="min-h-[80px]"
                 />
               </FormControl>
               <FormMessage />

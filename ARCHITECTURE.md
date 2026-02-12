@@ -51,11 +51,11 @@ flowchart LR
 
 ## Key files
 
-| Area        | Path / file |
-|------------|-------------|
-| Schema     | `src/db/schema.ts` |
-| DB client  | `src/db/index.ts` |
-| Validation | `src/lib/validations.ts` |
-| Blip logic | `src/actions/blips.ts` |
-| Feed API   | `src/app/api/feed/route.ts` |
+| Area       | Path / file                                               |
+| ---------- | --------------------------------------------------------- |
+| Schema     | `src/db/schema.ts`                                        |
+| DB client  | `src/db/index.ts`                                         |
+| Validation | `src/lib/validations.ts`                                  |
+| Blip logic | `src/actions/blips.ts`                                    |
+| Feed API   | `src/app/api/feed/route.ts`                               |
 | Layout     | `src/app/layout.tsx`, `src/components/layout/Sidebar.tsx` |

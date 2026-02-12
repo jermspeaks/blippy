@@ -47,20 +47,20 @@ React 19, Next.js (App Router), TypeScript (strict), Tailwind CSS v4, shadcn/ui 
 
 ## Commands
 
-| Command | Description |
-|--------|-------------|
-| `npm run dev` | Start dev server (port 6900) |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format with Prettier (Tailwind class sort) |
-| `npm run test` | Unit tests (Vitest, watch) |
-| `npm run test -- --run` | Unit tests, single run |
-| `npm run test:e2e` | E2E tests (Playwright) |
-| `npm run db:generate` | Generate Drizzle migrations |
-| `npm run db:migrate` | Apply migrations |
-| `npm run db:push` | Push schema (dev) |
-| `npm run db:seed` | Seed Uncategorized category |
+| Command                 | Description                                |
+| ----------------------- | ------------------------------------------ |
+| `npm run dev`           | Start dev server (port 6900)               |
+| `npm run build`         | Production build                           |
+| `npm run start`         | Start production server                    |
+| `npm run lint`          | Run ESLint                                 |
+| `npm run format`        | Format with Prettier (Tailwind class sort) |
+| `npm run test`          | Unit tests (Vitest, watch)                 |
+| `npm run test -- --run` | Unit tests, single run                     |
+| `npm run test:e2e`      | E2E tests (Playwright)                     |
+| `npm run db:generate`   | Generate Drizzle migrations                |
+| `npm run db:migrate`    | Apply migrations                           |
+| `npm run db:push`       | Push schema (dev)                          |
+| `npm run db:seed`       | Seed Uncategorized category                |
 
 ## Documentation
 

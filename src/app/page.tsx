@@ -13,7 +13,7 @@ export default async function FeedPage({
   const blips = await getFeedBlips(categoryId ?? null);
 
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="container mx-auto max-w-2xl px-8 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Feed</h1>
         <Button asChild size="sm">

@@ -2,7 +2,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function SettingsPage() {
   return (
-    <div className="container max-w-xl py-8">
+    <div className="container mx-auto max-w-xl px-8 py-8">
       <h1 className="mb-6 text-2xl font-semibold">Settings</h1>
       <div className="space-y-8">
         <section>

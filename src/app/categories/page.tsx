@@ -5,7 +5,7 @@ export default async function CategoriesPage() {
   const categoriesWithCount = await listCategoriesWithBlipCount();
 
   return (
-    <div className="container max-w-xl py-8">
+    <div className="container mx-auto max-w-xl px-8 py-8">
       <h1 className="mb-6 text-2xl font-semibold">Categories</h1>
       <ul className="space-y-2">
         {categoriesWithCount.map((cat) => (
@@ -16,10 +16,10 @@ export default async function CategoriesPage() {
                   ? "/?categoryId=uncategorized"
                   : `/?categoryId=${cat.id}`
               }
-              className="block rounded-lg border border-border bg-card p-4 text-card-foreground hover:bg-accent"
+              className="border-border bg-card text-card-foreground hover:bg-accent block rounded-lg border p-4"
             >
               <span className="font-medium">{cat.name}</span>
-              <span className="ml-2 text-muted-foreground">
+              <span className="text-muted-foreground ml-2">
                 ({cat.blipCount})
               </span>
             </Link>

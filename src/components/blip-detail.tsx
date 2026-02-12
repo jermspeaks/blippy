@@ -129,11 +129,13 @@ export function BlipDetail({
                         }
                       >
                         <option value="">Uncategorized</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
+                        {categories
+                          .filter((c) => c.id !== "uncategorized")
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
                       </select>
                     </FormControl>
                     <FormMessage />

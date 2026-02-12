@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createBlipSchema, type CreateBlipInput } from "@/lib/validations";
 import { createBlip } from "@/actions/blips";
+import { createCategory } from "@/actions/categories";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -14,9 +17,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Category } from "@/db/schema";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+
+const CREATE_NEW_SENTINEL = "__create__";
 
 export function BlipForm({
   categories,
@@ -24,6 +36,11 @@ export function BlipForm({
   categories: Category[];
 }) {
   const router = useRouter();
+  const [extraCategories, setExtraCategories] = useState<Category[]>([]);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
   const form = useForm<CreateBlipInput>({
     resolver: zodResolver(createBlipSchema),
     defaultValues: {
@@ -35,7 +52,8 @@ export function BlipForm({
   async function onSubmit(data: CreateBlipInput) {
     const formData = new FormData();
     formData.set("content", data.content);
-    if (data.categoryId != null) formData.set("categoryId", data.categoryId);
+    if (data.categoryId != null && data.categoryId !== CREATE_NEW_SENTINEL)
+      formData.set("categoryId", data.categoryId);
 
     const result = await createBlip(formData);
     if (result.ok) {
@@ -47,6 +65,32 @@ export function BlipForm({
       const err = result.error;
       if (err?.fieldErrors?.content?.[0])
         form.setError("content", { message: err.fieldErrors.content[0] });
+    }
+  }
+
+  const displayCategories = [
+    ...extraCategories,
+    ...categories.filter((c) => c.id !== "uncategorized"),
+  ];
+
+  async function handleCreateCategory() {
+    const name = newCategoryName.trim();
+    if (!name) {
+      toast.error("Enter a category name");
+      return;
+    }
+    setIsCreatingCategory(true);
+    const result = await createCategory(name);
+    setIsCreatingCategory(false);
+    if (result.ok) {
+      setExtraCategories((prev) => [...prev, result.category]);
+      form.setValue("categoryId", result.category.id);
+      setCreateDialogOpen(false);
+      setNewCategoryName("");
+      router.refresh();
+    } else {
+      const err = result.error;
+      toast.error(err?.fieldErrors?.name?.[0] ?? "Failed to create category");
     }
   }
 
@@ -81,16 +125,25 @@ export function BlipForm({
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(e.target.value === "" ? null : e.target.value)
-                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === CREATE_NEW_SENTINEL) {
+                      setCreateDialogOpen(true);
+                      field.onChange(field.value ?? null);
+                    } else {
+                      field.onChange(v === "" ? null : v);
+                    }
+                  }}
                 >
                   <option value="">Uncategorized</option>
-                  {categories.map((c) => (
+                  {displayCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
+                  <option value={CREATE_NEW_SENTINEL}>
+                    Create new category…
+                  </option>
                 </select>
               </FormControl>
               <FormMessage />
@@ -101,6 +154,56 @@ export function BlipForm({
           {form.formState.isSubmitting ? "Capturing…" : "Capture"}
         </Button>
       </form>
+
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) setNewCategoryName("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="new-category-name" className="text-sm font-medium">
+              Name
+            </label>
+            <Input
+              id="new-category-name"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Category name"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleCreateCategory();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter showCloseButton={false}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setNewCategoryName("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateCategory}
+              disabled={isCreatingCategory}
+            >
+              {isCreatingCategory ? "Creating…" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 }

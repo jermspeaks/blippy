@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Blippy
 
-## Getting Started
+Blip cultivation: capture small sparks of attention (questions, ideas, themes), resurface them in a feed, and cultivate or let them go.
 
-First, run the development server:
+**Phase 1** is web-only: SQLite-backed blips, a resurfacing feed, quick capture, categories, snooze/fizzle, and settings (theme + profile placeholder).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Feed** — Blips due for review (or never scheduled), with optional category filter. Open, snooze, or fizzle from the card.
+- **Quick capture** — Add a blip with optional category (including Uncategorized).
+- **Blip detail** — View and edit content/category, snooze, or fizzle.
+- **Categories** — List categories with blip counts; link to filter the feed by category or Uncategorized.
+- **Settings** — Theme (Light / Dark / System), profile placeholder for later.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+React 19, Next.js (App Router), TypeScript (strict), Tailwind CSS v4, shadcn/ui (Slate), Zustand, Zod, React Hook Form, Drizzle ORM, SQLite. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Learn More
+## Installation and local development
 
-To learn more about Next.js, take a look at the following resources:
+1. **Clone and install**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   git clone <repo-url>
+   cd blippy
+   npm install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Environment**
 
-## Deploy on Vercel
+   Copy `.env.example` to `.env` or `.env.local` and set `DATABASE_URL` (e.g. `file:./blippy.db`). Local dev uses `.env` or `.env.local`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Database**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+4. **Run the app**
+
+   ```bash
+   npm run dev
+   ```
+
+   App runs at **http://localhost:6900**.
+
+## Commands
+
+| Command | Description |
+|--------|-------------|
+| `npm run dev` | Start dev server (port 6900) |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format with Prettier (Tailwind class sort) |
+| `npm run test` | Unit tests (Vitest, watch) |
+| `npm run test -- --run` | Unit tests, single run |
+| `npm run test:e2e` | E2E tests (Playwright) |
+| `npm run db:generate` | Generate Drizzle migrations |
+| `npm run db:migrate` | Apply migrations |
+| `npm run db:push` | Push schema (dev) |
+| `npm run db:seed` | Seed Uncategorized category |
+
+## Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) — Tech stack, structure, data flow.
+- [DATA_MODEL.md](DATA_MODEL.md) — Tables and relationships.
+- [Testing.md](Testing.md) — Unit and E2E testing.
+- [FUTURE.md](FUTURE.md) — Later phases (SRS, moves, auth, Swift, workflows).
+
+## License
+
+MIT. Copyright (c) Jeremy Wong.

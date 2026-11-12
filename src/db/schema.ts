@@ -9,10 +9,28 @@ export const categories = sqliteTable("categories", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
+export const blipGroups = sqliteTable("blip_groups", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 export const blips = sqliteTable("blips", {
   id: text("id").primaryKey(),
   content: text("content").notNull(),
   categoryId: text("category_id").references(() => categories.id),
+  // Link-card fields (populated by markdown import; null for plain blips)
+  title: text("title"),
+  summary: text("summary"),
+  imageUrl: text("image_url"),
+  url: text("url"),
+  siteName: text("site_name"),
+  groupId: text("group_id").references(() => blipGroups.id),
   status: text("status", { enum: blipStatuses }).notNull().default("active"),
   nextReviewAt: integer("next_review_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
@@ -21,5 +39,6 @@ export const blips = sqliteTable("blips", {
 
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
+export type BlipGroup = typeof blipGroups.$inferSelect;
 export type Blip = typeof blips.$inferSelect;
 export type NewBlip = typeof blips.$inferInsert;

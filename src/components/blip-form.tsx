@@ -68,9 +68,12 @@ export function BlipForm({
     }
   }
 
+  const extraIds = new Set(extraCategories.map((c) => c.id));
   const displayCategories = [
     ...extraCategories,
-    ...categories.filter((c) => c.id !== "uncategorized"),
+    ...categories.filter(
+      (c) => c.id !== "uncategorized" && !extraIds.has(c.id)
+    ),
   ];
 
   async function handleCreateCategory() {

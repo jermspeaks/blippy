@@ -15,7 +15,7 @@ test.describe("Feed", () => {
       .click();
     await expect(page).toHaveURL(/\/capture/);
     await expect(
-      page.getByRole("heading", { name: /quick capture/i })
+      page.getByRole("heading", { name: /^capture$/i })
     ).toBeVisible();
   });
 

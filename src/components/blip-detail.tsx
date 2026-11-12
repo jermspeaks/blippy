@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import type { Blip, Category } from "@/db/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateBlipSchema, type UpdateBlipInput } from "@/lib/validations";
 import { updateBlip, snoozeBlip, setBlipFizzled } from "@/actions/blips";
+import { createCategory } from "@/actions/categories";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -15,11 +18,26 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CalendarClock, X } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+const CREATE_NEW_SENTINEL = "__create__";
 
 export function BlipDetail({
   blip,
@@ -28,7 +46,21 @@ export function BlipDetail({
   blip: Blip;
   categories: Category[];
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [extraCategories, setExtraCategories] = useState<Category[]>([]);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  const extraIds = new Set(extraCategories.map((c) => c.id));
+  const displayCategories = [
+    ...extraCategories,
+    ...categories.filter(
+      (c) => c.id !== "uncategorized" && !extraIds.has(c.id)
+    ),
+  ];
+
   const form = useForm<UpdateBlipInput>({
     resolver: zodResolver(updateBlipSchema),
     defaultValues: {
@@ -73,12 +105,33 @@ export function BlipDetail({
     });
   }
 
+  async function handleCreateCategory() {
+    const name = newCategoryName.trim();
+    if (!name) {
+      toast.error("Enter a category name");
+      return;
+    }
+    setIsCreatingCategory(true);
+    const result = await createCategory(name);
+    setIsCreatingCategory(false);
+    if (result.ok) {
+      setExtraCategories((prev) => [...prev, result.category]);
+      form.setValue("categoryId", result.category.id);
+      setCreateDialogOpen(false);
+      setNewCategoryName("");
+      router.refresh();
+    } else {
+      const err = result.error;
+      toast.error(err?.fieldErrors?.name?.[0] ?? "Failed to create category");
+    }
+  }
+
   const categoryName =
     categories.find((c) => c.id === blip.categoryId)?.name ?? "Uncategorized";
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex items-center gap-2 text-sm">
         <Link href="/" className="hover:underline">
           Feed
         </Link>
@@ -88,10 +141,10 @@ export function BlipDetail({
 
       <Card>
         <CardHeader>
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-muted-foreground text-sm font-medium">
             {categoryName} · {blip.status}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Created {blip.createdAt?.toLocaleDateString() ?? ""} · Next review{" "}
             {blip.nextReviewAt?.toLocaleDateString() ?? "—"}
           </p>
@@ -106,7 +159,7 @@ export function BlipDetail({
                   <FormItem>
                     <FormLabel>Content</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value ?? ""} />
+                      <Textarea {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -120,22 +173,27 @@ export function BlipDetail({
                     <FormLabel>Category</FormLabel>
                     <FormControl>
                       <select
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
                         value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value === "" ? null : e.target.value
-                          )
-                        }
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === CREATE_NEW_SENTINEL) {
+                            setCreateDialogOpen(true);
+                            field.onChange(field.value ?? null);
+                          } else {
+                            field.onChange(v === "" ? null : v);
+                          }
+                        }}
                       >
                         <option value="">Uncategorized</option>
-                        {categories
-                          .filter((c) => c.id !== "uncategorized")
-                          .map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
+                        {displayCategories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                        <option value={CREATE_NEW_SENTINEL}>
+                          Create new category…
+                        </option>
                       </select>
                     </FormControl>
                     <FormMessage />
@@ -164,13 +222,63 @@ export function BlipDetail({
             size="sm"
             onClick={handleFizzle}
             disabled={isPending}
-            className="inline-flex items-center gap-1 text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive inline-flex items-center gap-1"
           >
             <X className="size-3" />
             Fizzle
           </Button>
         </CardFooter>
       </Card>
+
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) setNewCategoryName("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="blip-detail-new-category-name" className="text-sm font-medium">
+              Name
+            </label>
+            <Input
+              id="blip-detail-new-category-name"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Category name"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleCreateCategory();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter showCloseButton={false}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setNewCategoryName("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateCategory}
+              disabled={isCreatingCategory}
+            >
+              {isCreatingCategory ? "Creating…" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   PlusCircle,
   FolderOpen,
+  Layers,
   Settings,
   PanelLeftClose,
   PanelLeft,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { href: "/", label: "Feed", icon: LayoutDashboard },
   { href: "/capture", label: "Capture", icon: PlusCircle },
+  { href: "/spaces", label: "Spaces", icon: Layers },
   { href: "/categories", label: "Categories", icon: FolderOpen },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

@@ -25,8 +25,11 @@ export function CaptureForm() {
       const dupes = result.skippedDuplicates
         ? `, ${result.skippedDuplicates} already existed`
         : "";
+      const stored = result.storedInSpaces
+        ? `, ${result.storedInSpaces} stored in spaces`
+        : "";
       toast.success(
-        `Created ${result.created} blip${result.created === 1 ? "" : "s"}${dupes}`
+        `Created ${result.created} blip${result.created === 1 ? "" : "s"}${stored}${dupes}`
       );
       if (result.created > 0) {
         setMarkdown("");

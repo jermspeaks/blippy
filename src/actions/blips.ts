@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { blips, categories } from "@/db/schema";
+import { blips, blipGroups, categories } from "@/db/schema";
 import {
   createBlipSchema,
   updateBlipSchema,
@@ -11,7 +11,7 @@ import { eq, and, or, lte, sql, asc, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
-const FEED_CAP = 10;
+const FEED_CAP = 50;
 
 export async function createBlip(formData: FormData) {
   const raw = {
@@ -122,13 +122,14 @@ export async function getFeedBlips(categoryId?: string | null) {
       : and(active, dueOrNull);
 
   const rows = await db
-    .select()
+    .select({ blip: blips, groupLabel: blipGroups.label })
     .from(blips)
+    .leftJoin(blipGroups, eq(blips.groupId, blipGroups.id))
     .where(conditions)
     .orderBy(asc(blips.nextReviewAt), asc(blips.createdAt))
     .limit(FEED_CAP);
 
-  return rows;
+  return rows.map((r) => ({ ...r.blip, groupLabel: r.groupLabel }));
 }
 
 export async function getBlipById(id: string) {

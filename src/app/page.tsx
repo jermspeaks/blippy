@@ -1,5 +1,6 @@
 import { getFeedBlips } from "@/actions/blips";
 import { BlipCard } from "@/components/blip-card";
+import { buildFeedSections } from "@/lib/feed-groups";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -11,6 +12,7 @@ export default async function FeedPage({
 }) {
   const { categoryId } = await searchParams;
   const blips = await getFeedBlips(categoryId ?? null);
+  const sections = buildFeedSections(blips);
 
   return (
     <div className="container mx-auto max-w-2xl px-8 py-8">
@@ -28,13 +30,30 @@ export default async function FeedPage({
           No blips due for review. Add one from Capture or check back later.
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {blips.map((blip) => (
-            <li key={blip.id}>
-              <BlipCard blip={blip} />
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-3">
+          {sections.map((section) =>
+            section.type === "single" ? (
+              <BlipCard key={section.blip.id} blip={section.blip} />
+            ) : (
+              <section
+                key={section.groupId}
+                className="rounded-xl border bg-muted/30 p-3"
+              >
+                <h2 className="mb-2 flex items-center gap-2 text-sm font-medium">
+                  {section.label}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {section.blips.length} related
+                  </span>
+                </h2>
+                <div className="flex flex-col gap-3">
+                  {section.blips.map((blip) => (
+                    <BlipCard key={blip.id} blip={blip} />
+                  ))}
+                </div>
+              </section>
+            )
+          )}
+        </div>
       )}
     </div>
   );

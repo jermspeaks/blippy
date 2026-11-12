@@ -14,7 +14,7 @@ export default async function BlipDetailPage({
   const categories = await listCategories();
 
   return (
-    <div className="container max-w-xl py-8">
+    <div className="container mx-auto max-w-xl px-8 py-8">
       <BlipDetail blip={blip} categories={categories} />
     </div>
   );

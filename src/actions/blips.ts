@@ -7,7 +7,7 @@ import {
   updateBlipSchema,
   snoozeBlipSchema,
 } from "@/lib/validations";
-import { eq, and, or, lte, sql, asc, count } from "drizzle-orm";
+import { eq, and, or, lte, sql, asc, count, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -113,7 +113,8 @@ export async function getFeedBlips(categoryId?: string | null) {
     lte(blips.nextReviewAt, today),
     sql`${blips.nextReviewAt} IS NULL`
   );
-  const active = eq(blips.status, "active");
+  // Blips stored in a space leave the feed.
+  const active = and(eq(blips.status, "active"), isNull(blips.spaceId));
   const conditions =
     categoryId != null && categoryId !== ""
       ? categoryId === "uncategorized"

@@ -49,6 +49,10 @@ Data flow: UI -> Server Actions / Route Handlers -> SQLite via Drizzle.
 
 Capture pastes markdown -> `src/lib/markdown-links.ts` extracts links -> `src/lib/og.ts` fetches OG metadata (with an SSRF guard) -> `src/lib/ai/organize.ts` asks the provider (`src/lib/ai/providers.ts`, plain `fetch`, OpenAI or Anthropic) for title/summary/topic group -> `src/actions/capture.ts` saves blips. Without an API key it falls back to OG data. Provider/model are chosen in Settings; keys come from `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` in `.env.local` (never stored in the tracked DB).
 
+## Spaces
+
+`src/actions/spaces.ts` holds all space logic (CRUD, store/unstore, group linking, `sweepSpace`). Spaces hook into the AI topic groups (`blip_groups`), not user categories. The importer passes space names to the AI as preferred group labels. See DATA_MODEL.md.
+
 ## Gotchas
 
 - `blippy.db` is tracked in git, so running or seeding the app shows up as a modified file. Don't commit it by accident.

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { blips, blipGroups, type BlipGroup } from "@/db/schema";
+import { blips, blipGroups, spaces, type BlipGroup, type Space } from "@/db/schema";
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -23,6 +23,7 @@ export type ImportResult =
   | {
       ok: true;
       created: number;
+      storedInSpaces: number;
       skippedDuplicates: number;
       groups: number;
       usedAi: boolean;
@@ -60,10 +61,20 @@ type Enriched = { og: LinkMetadata; ai: OrganizedBlip | undefined };
 async function enrichLinks(
   links: { url: string; text: string; nested: boolean }[],
   warnings: string[]
-): Promise<{ enriched: Enriched[]; usedAi: boolean; existingGroups: BlipGroup[] }> {
+): Promise<{
+  enriched: Enriched[];
+  usedAi: boolean;
+  existingGroups: BlipGroup[];
+  allSpaces: Space[];
+}> {
   const metas = await mapLimit(links, FETCH_CONCURRENCY, (l) => fetchLinkMetadata(l.url));
   const config = await getAiConfig();
   const existingGroups = await db.select().from(blipGroups);
+  const allSpaces = await db.select().from(spaces);
+  // Space names are preferred labels, so related links land in the matching space.
+  const preferredLabels = Array.from(
+    new Set([...existingGroups.map((g) => g.label), ...allSpaces.map((x) => x.name)])
+  );
   let organized = new Map<number, OrganizedBlip>();
   let usedAi = false;
   if (getApiKey(config.provider)) {
@@ -77,7 +88,7 @@ async function enrichLinks(
           nested: l.nested,
           og: metas[i],
         })),
-        existingGroups.map((g) => g.label)
+        preferredLabels
       );
       usedAi = true;
     } catch (err) {
@@ -95,13 +106,26 @@ async function enrichLinks(
     enriched: metas.map((og, i) => ({ og, ai: organized.get(i) })),
     usedAi,
     existingGroups,
+    allSpaces,
   };
 }
 
-/** Map AI group labels to group ids, creating (pending) groups for new labels. */
-function makeGroupResolver(existingGroups: BlipGroup[], now: Date) {
+/**
+ * Map AI group labels to group ids, creating (pending) groups for new labels.
+ * A new group whose label matches a space name is linked to that space, and
+ * `spaceFor` says which space (if any) should store a blip in a given group.
+ */
+function makeGroupResolver(existingGroups: BlipGroup[], allSpaces: Space[], now: Date) {
   const idByLabel = new Map(existingGroups.map((g) => [g.label.toLowerCase(), g.id]));
-  const pending: { id: string; label: string; createdAt: Date }[] = [];
+  const spaceByGroup = new Map(existingGroups.map((g) => [g.id, g.spaceId]));
+  const spaceById = new Map(allSpaces.map((x) => [x.id, x]));
+  const spaceByName = new Map(allSpaces.map((x) => [x.name.toLowerCase(), x]));
+  const pending: {
+    id: string;
+    label: string;
+    spaceId: string | null;
+    createdAt: Date;
+  }[] = [];
   return {
     pending,
     resolve(label: string | null | undefined): string | null {
@@ -109,10 +133,18 @@ function makeGroupResolver(existingGroups: BlipGroup[], now: Date) {
       const key = label.toLowerCase();
       if (!idByLabel.has(key)) {
         const id = randomUUID();
+        const spaceId = spaceByName.get(key)?.id ?? null;
         idByLabel.set(key, id);
-        pending.push({ id, label, createdAt: now });
+        spaceByGroup.set(id, spaceId);
+        pending.push({ id, label, spaceId, createdAt: now });
       }
       return idByLabel.get(key)!;
+    },
+    /** Space that auto-intakes blips of this group, or null. */
+    spaceFor(groupId: string | null): string | null {
+      if (!groupId) return null;
+      const space = spaceById.get(spaceByGroup.get(groupId) ?? "");
+      return space?.autoIntake ? space.id : null;
     },
   };
 }
@@ -140,16 +172,25 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
   const fresh = links.filter((l) => !known.has(l.url));
   const skippedDuplicates = links.length - fresh.length;
   if (fresh.length === 0) {
-    return { ok: true, created: 0, skippedDuplicates, groups: 0, usedAi: false, warnings };
+    return {
+      ok: true,
+      created: 0,
+      storedInSpaces: 0,
+      skippedDuplicates,
+      groups: 0,
+      usedAi: false,
+      warnings,
+    };
   }
 
-  const { enriched, usedAi, existingGroups } = await enrichLinks(fresh, warnings);
+  const { enriched, usedAi, existingGroups, allSpaces } = await enrichLinks(fresh, warnings);
 
   const now = new Date();
-  const groups = makeGroupResolver(existingGroups, now);
+  const groups = makeGroupResolver(existingGroups, allSpaces, now);
   const rows = fresh.map((link, i) => {
     const { og, ai } = enriched[i];
     const title = ai?.title || fallbackTitle(link, og);
+    const groupId = groups.resolve(ai?.group);
     return {
       id: randomUUID(),
       content: `[${title}](${link.url})`,
@@ -158,7 +199,8 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
       imageUrl: og.imageUrl,
       url: link.url,
       siteName: og.siteName,
-      groupId: groups.resolve(ai?.group),
+      groupId,
+      spaceId: groups.spaceFor(groupId),
       categoryId: null,
       status: "active" as const,
       nextReviewAt: null,
@@ -174,9 +216,11 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
 
   revalidatePath("/");
   revalidatePath("/feed");
+  revalidatePath("/spaces");
   return {
     ok: true,
     created: rows.length,
+    storedInSpaces: rows.filter((r) => r.spaceId).length,
     skippedDuplicates,
     groups: groups.pending.length,
     usedAi,
@@ -221,7 +265,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
   for (let start = 0; start < targets.length; start += MAX_LINKS) {
     const chunk = targets.slice(start, start + MAX_LINKS);
     const chunkWarnings: string[] = [];
-    const { enriched, usedAi, existingGroups } = await enrichLinks(
+    const { enriched, usedAi, existingGroups, allSpaces } = await enrichLinks(
       chunk.map((b) => ({ url: b.url!, text: b.title ?? "", nested: false })),
       chunkWarnings
     );
@@ -233,12 +277,13 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
     }
 
     const now = new Date();
-    const groups = makeGroupResolver(existingGroups, now);
+    const groups = makeGroupResolver(existingGroups, allSpaces, now);
     // Resolve groups first so new groups can be inserted before blips reference them.
     const updates = chunk.map((blip, i) => {
       const { og, ai } = enriched[i];
       const title =
         ai?.title || og.title || blip.title || fallbackTitle({ text: "", url: blip.url! }, og);
+      const groupId = groups.resolve(ai?.group);
       return {
         id: blip.id,
         set: {
@@ -247,7 +292,9 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
           summary: ai?.summary || og.description?.slice(0, 500) || blip.summary,
           imageUrl: og.imageUrl ?? blip.imageUrl,
           siteName: og.siteName ?? blip.siteName,
-          groupId: groups.resolve(ai?.group),
+          groupId,
+          // Never move a blip out of a space it is already stored in.
+          spaceId: blip.spaceId ?? groups.spaceFor(groupId),
           updatedAt: now,
         },
       };
@@ -262,5 +309,6 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
 
   revalidatePath("/");
   revalidatePath("/feed");
+  revalidatePath("/spaces");
   return { ok: true, updated, groups: newGroups, warnings };
 }

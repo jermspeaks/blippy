@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import type { Blip } from "@/db/schema";
+import type { Blip, Space } from "@/db/schema";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { snoozeBlip, setBlipFizzled } from "@/actions/blips";
-import { CalendarClock, X, ExternalLink } from "lucide-react";
+import { storeBlip } from "@/actions/spaces";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CalendarClock, X, ExternalLink, Archive } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -17,9 +25,10 @@ function hostOf(url: string): string {
   }
 }
 
-export function BlipCard({ blip }: { blip: Blip }) {
+export function BlipCard({ blip, spaces = [] }: { blip: Blip; spaces?: Space[] }) {
   const [isPending, startTransition] = useTransition();
   const [imageFailed, setImageFailed] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
 
   function handleSnooze() {
     const next = new Date();
@@ -36,6 +45,16 @@ export function BlipCard({ blip }: { blip: Blip }) {
       const result = await setBlipFizzled(blip.id);
       if (result.ok) toast.success("Blip fizzled");
       else toast.error("Failed to fizzle");
+    });
+  }
+
+  function handleStore(space: Space) {
+    startTransition(async () => {
+      const result = await storeBlip(blip.id, space.id);
+      if (result.ok) {
+        toast.success(`Stored in ${result.spaceName}`);
+        setStoreOpen(false);
+      } else toast.error(result.error);
     });
   }
 
@@ -105,6 +124,16 @@ export function BlipCard({ blip }: { blip: Blip }) {
               Snooze
             </Button>
             <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStoreOpen(true)}
+              disabled={isPending}
+              className="inline-flex items-center gap-1"
+            >
+              <Archive className="size-3" />
+              Store
+            </Button>
+            <Button
               variant="ghost"
               size="sm"
               onClick={handleFizzle}
@@ -117,6 +146,45 @@ export function BlipCard({ blip }: { blip: Blip }) {
           </CardFooter>
         </div>
       </div>
+      <Dialog open={storeOpen} onOpenChange={setStoreOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Store in a space</DialogTitle>
+            <DialogDescription>
+              Pick the space this fits best. It leaves the feed and lives there.
+            </DialogDescription>
+          </DialogHeader>
+          {spaces.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              You have no spaces yet.{" "}
+              <Link href="/spaces" className="text-primary underline">
+                Create one
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {spaces.map((space) => (
+                <li key={space.id}>
+                  <Button
+                    variant="outline"
+                    className="h-auto w-full flex-col items-start gap-0.5 py-2 text-left"
+                    onClick={() => handleStore(space)}
+                    disabled={isPending}
+                  >
+                    <span>{space.name}</span>
+                    {space.description && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {space.description}
+                      </span>
+                    )}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -14,7 +14,7 @@ Blip cultivation: capture small sparks of attention (questions, ideas, themes), 
 
 ## Tech stack
 
-React 19, Next.js (App Router), TypeScript (strict), Tailwind CSS v4, shadcn/ui (Slate), Zustand, Zod, React Hook Form, Drizzle ORM, SQLite. See [ARCHITECTURE.md](ARCHITECTURE.md).
+React 19, Next.js (App Router), TypeScript (strict), Tailwind CSS v4, shadcn/ui (Slate), Zustand, Zod, React Hook Form, Drizzle ORM, SQLite. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Installation and local development
 
@@ -64,10 +64,11 @@ React 19, Next.js (App Router), TypeScript (strict), Tailwind CSS v4, shadcn/ui 
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — Tech stack, structure, data flow.
-- [DATA_MODEL.md](DATA_MODEL.md) — Tables and relationships.
-- [Testing.md](Testing.md) — Unit and E2E testing.
-- [FUTURE.md](FUTURE.md) — Later phases (SRS, moves, auth, Swift, workflows).
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Tech stack, structure, data flow.
+- [docs/discovery/](docs/discovery/) — One discovery doc per feature: goals, decisions, open questions.
+- [docs/DATA_MODEL.md](docs/DATA_MODEL.md) — Tables and relationships.
+- [docs/Testing.md](docs/Testing.md) — Unit and E2E testing.
+- [docs/FUTURE.md](docs/FUTURE.md) — Later phases (SRS, moves, auth, Swift, workflows).
 
 ## License
 

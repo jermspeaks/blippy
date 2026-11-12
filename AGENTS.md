@@ -39,7 +39,7 @@ Data flow: UI -> Server Actions / Route Handlers -> SQLite via Drizzle.
 ## Conventions
 
 - Mutations go through Server Actions in `src/actions/`; validate input with the Zod schemas in `src/lib/validations.ts`.
-- Schema changes: edit `src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate`. Update `DATA_MODEL.md` if the model changes.
+- Schema changes: edit `src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate`. Update `docs/DATA_MODEL.md` if the model changes.
 - Use shadcn/ui components from `src/components/ui` before building custom primitives.
 - Keep TypeScript strict; use the `@/` path alias.
 - Put unit tests next to the module as `*.test.ts`; E2E tests live in `e2e/*.spec.ts`.
@@ -51,7 +51,13 @@ Capture pastes markdown -> `src/lib/markdown-links.ts` extracts links -> `src/li
 
 ## Spaces
 
-`src/actions/spaces.ts` holds all space logic (CRUD, store/unstore, group linking, `sweepSpace`). Spaces hook into the AI topic groups (`blip_groups`), not user categories. The importer passes space names to the AI as preferred group labels. See DATA_MODEL.md.
+`src/actions/spaces.ts` holds all space logic (CRUD, store/unstore, group linking, `sweepSpace`). Spaces hook into the AI topic groups (`blip_groups`), not user categories. The importer passes space names to the AI as preferred group labels. See docs/DATA_MODEL.md and docs/discovery/spaces.md.
+
+## Docs convention
+
+Reference docs live in `docs/` (ARCHITECTURE, DATA_MODEL, Testing, FUTURE). `README.md` and `AGENTS.md` stay at the repo root.
+
+**For anything new (a feature, page, or notable change), write a discovery doc first or alongside the work:** copy `docs/discovery/_template.md` to `docs/discovery/<feature-name>.md`, fill it in, and add it to the index in `docs/README.md`. Record the goal, decisions made (and why), open questions, and the data/design touchpoints. Keep it updated as the feature evolves, and update `docs/DATA_MODEL.md` for schema changes.
 
 ## Gotchas
 
@@ -61,7 +67,7 @@ Capture pastes markdown -> `src/lib/markdown-links.ts` extracts links -> `src/li
 ## More docs
 
 - [README.md](README.md) - features and setup
-- [ARCHITECTURE.md](ARCHITECTURE.md) - stack and structure
-- [DATA_MODEL.md](DATA_MODEL.md) - schema
-- [Testing.md](Testing.md) - testing strategy
-- [FUTURE.md](FUTURE.md) - roadmap
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - stack and structure
+- [docs/DATA_MODEL.md](docs/DATA_MODEL.md) - schema
+- [docs/Testing.md](docs/Testing.md) - testing strategy
+- [docs/FUTURE.md](docs/FUTURE.md) - roadmap

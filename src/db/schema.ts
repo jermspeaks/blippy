@@ -69,7 +69,7 @@ export const routingEvents = sqliteTable("routing_events", {
   // null = no route found; the blip stayed in the feed.
   routedBy: text("routed_by", { enum: routedByValues }),
   reason: text("reason").notNull(),
-  source: text("source", { enum: ["capture", "reprocess"] }).notNull(),
+  source: text("source", { enum: ["capture", "reprocess", "reroute"] }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 

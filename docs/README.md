@@ -17,6 +17,7 @@ One per feature or notable change. Start from [discovery/_template.md](discovery
 | [Spaces](discovery/spaces.md) | Built |
 | [Video space](discovery/video-space.md) | Built |
 | [Inbox and routing](discovery/inbox-routing.md) | Built (steps 1-2) |
+| [Re-route feed blips](discovery/reroute.md) | Built |
 | [Capture result panel](discovery/capture-result-panel.md) | Designed (plan) |
 | [Routing command center](discovery/routing-command-center.md) | Designed (plan) |
 | [Lifecycle pathways](discovery/lifecycle-pathways.md) | Exploring (not designed) |

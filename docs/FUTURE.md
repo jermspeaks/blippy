@@ -34,6 +34,10 @@ Blips should be able to progress, or die out, along paths that depend on what th
 
 Built: `/routing` page with routing order, domain rules, per-space state, AI prompt and audit log. Open: log manual corrections as events and show the log in the capture result panel. See [plan](discovery/routing-command-center.md).
 
+### Spaces with multiple topics
+
+Looks like there are aliases or other, very closely related topics, that can be grouped in the same space. That would be really good to add to routing command.
+
 ### Specialized spaces
 
 We started with youtube, but we need one for Github since there's ways to pull metadata from github to determine why I've saved a project.

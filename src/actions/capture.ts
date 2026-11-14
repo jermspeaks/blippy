@@ -22,7 +22,8 @@ import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { ensureVideoSpace } from "@/lib/video-space";
-import { pickRoute, aiEligibleSpaces, inboxReason, matchRule } from "@/lib/routing";
+import { pickRoute, matchRule } from "@/lib/routing";
+import { aiSpaceOptions, aiSpaceId, routingEvent } from "@/lib/route-helpers";
 
 const MAX_LINKS = 50;
 const FETCH_CONCURRENCY = 6;
@@ -65,41 +66,6 @@ function fallbackTitle(link: { text: string; url: string }, og: LinkMetadata) {
   } catch {
     return link.url;
   }
-}
-
-function aiSpaceOptions(allSpaces: Space[]) {
-  return aiEligibleSpaces(allSpaces).map((s) => ({ name: s.name, description: s.description }));
-}
-function aiSpaceId(allSpaces: Space[], name: string | null | undefined): string | null {
-  if (!name) return null;
-  return aiEligibleSpaces(allSpaces).find((s) => s.name.toLowerCase() === name.toLowerCase())?.id ?? null;
-}
-
-type EventInput = {
-  blipId: string;
-  blipTitle: string;
-  url: string | null;
-  route: ReturnType<typeof pickRoute>;
-  usedAi: boolean;
-  spaceName: (id: string) => string | null;
-  source: "capture" | "reprocess";
-  now: Date;
-};
-
-/** One audit-log row describing a routing decision (including "stayed in the feed"). */
-function routingEvent(e: EventInput) {
-  return {
-    id: randomUUID(),
-    blipId: e.blipId,
-    blipTitle: e.blipTitle,
-    url: e.url,
-    spaceId: e.route?.spaceId ?? null,
-    spaceName: e.route ? e.spaceName(e.route.spaceId) : null,
-    routedBy: e.route?.routedBy ?? null,
-    reason: e.route?.reason ?? inboxReason(e.usedAi),
-    source: e.source,
-    createdAt: e.now,
-  };
 }
 
 type Enriched = { og: LinkMetadata; ai: OrganizedBlip | undefined };

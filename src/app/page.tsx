@@ -2,6 +2,8 @@ import { getFeedBlips } from "@/actions/blips";
 import { GroupActions } from "@/components/group-actions";
 import { BlipCard } from "@/components/blip-card";
 import { listSpaces } from "@/actions/spaces";
+import { countRerouteCandidates } from "@/actions/reroute";
+import { RerouteButton } from "@/components/reroute";
 import { buildFeedSections } from "@/lib/feed-groups";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,17 +13,21 @@ export default async function FeedPage() {
   const blips = await getFeedBlips();
   const sections = buildFeedSections(blips);
   const spaces = await listSpaces();
+  const rerouteCount = await countRerouteCandidates();
 
   return (
     <div className="container mx-auto max-w-5xl px-8 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Feed</h1>
-        <Button asChild size="sm">
-          <Link href="/capture" className="inline-flex items-center gap-2">
-            <PlusCircle className="size-4" />
-            Capture
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <RerouteButton count={rerouteCount} />
+          <Button asChild size="sm">
+            <Link href="/capture" className="inline-flex items-center gap-2">
+              <PlusCircle className="size-4" />
+              Capture
+            </Link>
+          </Button>
+        </div>
       </div>
       {blips.length === 0 ? (
         <p className="text-muted-foreground">
@@ -31,15 +37,19 @@ export default async function FeedPage() {
         <div className="flex flex-col gap-2">
           {sections.map((section) =>
             section.type === "single" ? (
-              <BlipCard key={section.blip.id} blip={section.blip} spaces={spaces} />
+              <BlipCard
+                key={section.blip.id}
+                blip={section.blip}
+                spaces={spaces}
+              />
             ) : (
               <section
                 key={section.groupId}
-                className="rounded-xl border bg-muted/30 p-3"
+                className="bg-muted/30 rounded-xl border p-3"
               >
                 <h2 className="mb-2 flex items-center gap-2 text-sm font-medium">
                   {section.label}
-                  <span className="text-xs font-normal text-muted-foreground">
+                  <span className="text-muted-foreground text-xs font-normal">
                     {section.blips.length} related
                   </span>
                   <GroupActions

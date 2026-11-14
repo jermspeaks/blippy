@@ -9,6 +9,7 @@ import {
 } from "@/lib/validations";
 import { eq, and, or, lte, gt, sql, asc, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { endOfToday } from "@/lib/due";
 import { randomUUID } from "crypto";
 
 const FEED_CAP = 50;
@@ -96,11 +97,6 @@ export async function setBlipFizzled(id: string) {
   return { ok: true as const };
 }
 
-function endOfToday() {
-  const d = new Date();
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
 
 export async function getFeedBlips() {
   const today = endOfToday();

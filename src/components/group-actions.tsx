@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSpaceFromGroup, routeGroupToSpace } from "@/actions/spaces";
+import { offerReroute } from "@/components/reroute";
 import type { Space, SpaceKind } from "@/db/schema";
 
 const plural = (n: number) => `${n} blip${n === 1 ? "" : "s"}`;
@@ -51,6 +52,7 @@ export function GroupActions({
       toast.success(`Created "${name.trim()}" with ${plural(r.moved)}`);
       setMode(null);
       router.refresh();
+      void offerReroute(router);
     });
   }
 

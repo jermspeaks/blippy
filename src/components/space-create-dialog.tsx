@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSpace } from "@/actions/spaces";
+import { offerReroute } from "@/components/reroute";
 import type { SpaceKind } from "@/db/schema";
 
 export function SpaceCreateDialog() {
@@ -44,6 +45,7 @@ export function SpaceCreateDialog() {
       setDescription("");
       setOpen(false);
       router.push(`/spaces/${result.id}`);
+      void offerReroute(router);
     });
   }
 

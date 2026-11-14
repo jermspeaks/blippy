@@ -7,6 +7,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createRoutingRule, deleteRoutingRule } from "@/actions/routing";
+import { offerReroute } from "@/components/reroute";
 
 type Rule = { id: string; pattern: string; spaceId: string; spaceName: string };
 type SpaceOption = { id: string; name: string };
@@ -31,6 +32,7 @@ export function RoutingRules({
         toast.success(`Links from ${r.pattern} now go to that space`);
         setPattern("");
         router.refresh();
+        void offerReroute(router);
       } else toast.error(r.error);
     });
   }

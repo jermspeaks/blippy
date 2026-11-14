@@ -22,10 +22,12 @@ Example input: a day's notes with Nvidia news links (one nested under another), 
 - **Dedupe by URL;** max 50 links per import.
 - **Parsing is per item:** one bad AI entry must not discard the batch (a `summary: null` once broke a whole import).
 
+- **Space routing:** the AI also returns `space` (an existing space name) per link, applied automatically; see [inbox-routing.md](inbox-routing.md).
+
 ## Open questions
 
 - Re-processing loses the original nesting hint (nested bullets). Store it if grouping quality suffers.
-- Preview-before-save step? Currently imports save directly.
+- ~~Preview-before-save step?~~ Decided: save, then triage in the inbox ([inbox-routing.md](inbox-routing.md)).
 
 ## Design
 

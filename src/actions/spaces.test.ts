@@ -21,6 +21,8 @@ import {
   storeBlip,
   unstoreBlip,
   getSpaceDetail,
+  routeGroupToSpace,
+  createSpaceFromGroup,
 } from "./spaces";
 import { getFeedBlips } from "./blips";
 
@@ -96,5 +98,44 @@ describe("spaces", () => {
     await deleteSpace(s.id);
     expect(await spaceOf("m1")).toBeNull();
     expect(await getSpaceDetail(s.id)).toBeNull();
+  });
+
+  it("creates a space from a group: moves blips, drops the label, keeps the link", async () => {
+    await seedGroup("g-t", "Travel Ideas");
+    await seedBlip("t1", "g-t");
+    await seedBlip("t2", "g-t");
+    const r = await createSpaceFromGroup("g-t", { name: "Travel", description: "Trips to plan" });
+    if (!r.ok) throw new Error("failed");
+    expect(r.moved).toBe(2);
+    expect(await spaceOf("t1")).toBe(r.id);
+    const [b] = await db.select().from(blips).where(eq(blips.id, "t1"));
+    expect(b.groupId).toBeNull();
+    const [g] = await db.select().from(blipGroups).where(eq(blipGroups.id, "g-t"));
+    expect(g.spaceId).toBe(r.id);
+    expect((await createSpaceFromGroup("g-t", { name: "travel" })).ok).toBe(false);
+  });
+
+  it("moves a group to an existing space even with auto-intake off", async () => {
+    const s = await createSpace({ name: "Archive", autoIntake: false });
+    if (!s.ok) throw new Error("create failed");
+    await seedGroup("g-a", "Old Stuff");
+    await seedBlip("a1", "g-a");
+    const r = await routeGroupToSpace("g-a", s.id);
+    expect(r.ok && r.moved).toBe(1);
+    expect(await spaceOf("a1")).toBe(s.id);
+  });
+
+  it("suggests linking the group when a blip is stored by hand", async () => {
+    const s = await createSpace({ name: "Reading", autoIntake: true });
+    if (!s.ok) throw new Error("create failed");
+    await seedGroup("g-rd", "Long Reads");
+    await seedBlip("rd1", "g-rd");
+    await seedBlip("rd2", "g-rd");
+    const r = await storeBlip("rd1", s.id);
+    expect(r.ok && r.suggestGroup).toEqual({ id: "g-rd", label: "Long Reads", others: 1 });
+    await routeGroupToSpace("g-rd", s.id);
+    await seedBlip("rd3", "g-rd");
+    const again = await storeBlip("rd3", s.id);
+    expect(again.ok && again.suggestGroup).toBeNull();
   });
 });

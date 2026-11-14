@@ -7,6 +7,10 @@ export type BlipStatus = (typeof blipStatuses)[number];
 export const spaceKinds = ["general", "video"] as const;
 export type SpaceKind = (typeof spaceKinds)[number];
 
+// How a blip was auto-routed into a space at capture (null = stored by hand).
+export const routedByValues = ["rule", "group", "ai"] as const;
+export type RoutedBy = (typeof routedByValues)[number];
+
 export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -49,6 +53,7 @@ export const blips = sqliteTable("blips", {
   groupId: text("group_id").references(() => blipGroups.id),
   // Stored blips leave the feed and live in a space.
   spaceId: text("space_id").references(() => spaces.id),
+  routedBy: text("routed_by", { enum: routedByValues }),
   status: text("status", { enum: blipStatuses }).notNull().default("active"),
   nextReviewAt: integer("next_review_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),

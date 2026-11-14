@@ -7,7 +7,8 @@ For each input link, write:
 - title: a clear, specific title (max 90 chars). Prefer the page's own title; clean up site-name suffixes and noise like "(1)".
 - summary: one or two plain sentences (max 240 chars) on what the link is about. Use only the provided text; if there is little to go on, say less rather than inventing details.
 - group: a short topic label (2-4 words, Title Case) when this link is topically similar to at least one other link in the batch or to an existing group; otherwise null. Nested/indented links usually relate to the link above them. If a topic fits an existing group label, reuse that label exactly.
-Respond with only a JSON object: {"blips":[{"id":number,"title":string,"summary":string,"group":string|null}]}. Include every id exactly once.`;
+- space: if the input lists "spaces" (each with a name and description) and this link clearly belongs in one of them, that space's name copied exactly; otherwise null. Only choose a space when the fit is obvious from its name and description; when unsure, use null.
+Respond with only a JSON object: {"blips":[{"id":number,"title":string,"summary":string,"group":string|null,"space":string|null}]}. Include every id exactly once.`;
 
 export function buildSystemPrompt(extraInstructions: string | undefined): string {
   const extra = extraInstructions?.trim();

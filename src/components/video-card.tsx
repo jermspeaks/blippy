@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { unstoreBlip } from "@/actions/spaces";
 import { parseVideoUrl } from "@/lib/video";
 import type { Blip } from "@/db/schema";
+import { routedByNote } from "@/components/stored-blip-item";
 
 export function VideoCard({
   blip,
@@ -78,7 +79,13 @@ export function VideoCard({
           {heading}
         </Link>
         {blip.summary && <p className="line-clamp-3 text-sm text-muted-foreground">{blip.summary}</p>}
-        {groupLabel && <p className="text-xs text-muted-foreground">{groupLabel}</p>}
+        {(groupLabel || blip.routedBy === "ai") && (
+          <p className="text-xs text-muted-foreground">
+            {groupLabel}
+            {groupLabel && blip.routedBy === "ai" ? " · " : ""}
+            {blip.routedBy === "ai" ? routedByNote("ai").replace(/ · $/, "") : ""}
+          </p>
+        )}
         <div className="flex items-center justify-between pt-1">
           {blip.url && (
             <a

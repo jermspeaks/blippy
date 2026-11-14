@@ -1,4 +1,5 @@
 import { getFeedBlips } from "@/actions/blips";
+import { GroupActions } from "@/components/group-actions";
 import { BlipCard } from "@/components/blip-card";
 import { listSpaces } from "@/actions/spaces";
 import { buildFeedSections } from "@/lib/feed-groups";
@@ -17,7 +18,7 @@ export default async function FeedPage({
   const spaces = await listSpaces();
 
   return (
-    <div className="container mx-auto max-w-2xl px-8 py-8">
+    <div className="container mx-auto max-w-5xl px-8 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Feed</h1>
         <Button asChild size="sm">
@@ -32,7 +33,7 @@ export default async function FeedPage({
           No blips due for review. Add one from Capture or check back later.
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {sections.map((section) =>
             section.type === "single" ? (
               <BlipCard key={section.blip.id} blip={section.blip} spaces={spaces} />
@@ -46,8 +47,13 @@ export default async function FeedPage({
                   <span className="text-xs font-normal text-muted-foreground">
                     {section.blips.length} related
                   </span>
+                  <GroupActions
+                    groupId={section.groupId}
+                    label={section.label}
+                    spaces={spaces}
+                  />
                 </h2>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                   {section.blips.map((blip) => (
                     <BlipCard key={blip.id} blip={blip} spaces={spaces} />
                   ))}

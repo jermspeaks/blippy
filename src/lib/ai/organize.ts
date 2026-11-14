@@ -15,7 +15,11 @@ export type OrganizedBlip = {
   summary: string;
   /** Topic label shared by related blips, or null. */
   group: string | null;
+  /** Canonical name of an existing space this link clearly belongs to, or null. */
+  space: string | null;
 };
+
+export type SpaceOption = { name: string; description: string | null };
 
 // Models sometimes return null/missing fields for sparse links. Validate each
 // item on its own so one bad entry doesn't discard the whole batch.
@@ -24,6 +28,7 @@ const itemSchema = z.object({
   title: z.string().nullish(),
   summary: z.string().nullish(),
   group: z.string().nullish(),
+  space: z.string().nullish(),
 });
 const responseSchema = z.object({ blips: z.array(z.unknown()) });
 
@@ -34,10 +39,12 @@ const responseSchema = z.object({ blips: z.array(z.unknown()) });
 export async function organizeLinks(
   config: AiConfig,
   items: OrganizeInput[],
-  existingGroupLabels: string[]
+  existingGroupLabels: string[],
+  spaces: SpaceOption[] = []
 ): Promise<Map<number, OrganizedBlip>> {
   const payload = {
     existingGroups: existingGroupLabels,
+    spaces: spaces.map((s) => ({ name: s.name, description: s.description })),
     links: items.map((i) => ({
       id: i.id,
       url: i.url,
@@ -55,6 +62,8 @@ export async function organizeLinks(
   );
   const parsed = responseSchema.parse(raw);
 
+  // Only accept space names that really exist; map to the canonical spelling.
+  const spaceByLower = new Map(spaces.map((s) => [s.name.toLowerCase(), s.name]));
   const byId = new Map<number, OrganizedBlip>();
   for (const entry of parsed.blips) {
     const item = itemSchema.safeParse(entry);
@@ -65,6 +74,7 @@ export async function organizeLinks(
       title: (b.title ?? "").trim().slice(0, 200),
       summary: (b.summary ?? "").trim().slice(0, 500),
       group: b.group?.trim() || null,
+      space: spaceByLower.get((b.space ?? "").trim().toLowerCase()) ?? null,
     });
   }
 

@@ -30,4 +30,9 @@ Blips should be able to progress, or die out, along paths that depend on what th
 
 ## Exploratory
 
-A list of routing command center to understand how the links will automatically filter correctly.
+A list of routing command center to understand how the links will automatically filter correctly. This might include the instructions that the AI uses to decide where a link belongs.
+
+
+### Groups management page (`/groups`)
+
+Topic groups are currently only triaged from the feed (create a space, move to a space). A dedicated page could add: rename, merge two groups, link/unlink a space, delete, and move a blip between groups. Not designed yet; revisit once the routing command center ([plan](discovery/routing-command-center.md)) shows how much group cleanup is actually needed.

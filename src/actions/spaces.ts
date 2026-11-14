@@ -210,20 +210,105 @@ export async function unlinkGroupFromSpace(spaceId: string, groupId: string) {
 export async function storeBlip(blipId: string, spaceId: string) {
   const [space] = await db.select().from(spaces).where(eq(spaces.id, spaceId)).limit(1);
   if (!space) return { ok: false as const, error: "Space not found" };
+  const [blip] = await db.select().from(blips).where(eq(blips.id, blipId)).limit(1);
   await db
     .update(blips)
-    .set({ spaceId, updatedAt: new Date() })
+    .set({ spaceId, routedBy: null, updatedAt: new Date() })
     .where(eq(blips.id, blipId));
   revalidateAll(spaceId);
-  return { ok: true as const, spaceName: space.name };
+
+  // Learning loop: if the blip's topic group isn't linked to any space yet,
+  // offer to link it so future captures (and its siblings) route here.
+  let suggestGroup: { id: string; label: string; others: number } | null = null;
+  if (blip?.groupId) {
+    const [group] = await db.select().from(blipGroups).where(eq(blipGroups.id, blip.groupId)).limit(1);
+    if (group && group.spaceId === null) {
+      const others = await db
+        .select({ n: count() })
+        .from(blips)
+        .where(
+          and(
+            eq(blips.groupId, group.id),
+            isNull(blips.spaceId),
+            eq(blips.status, "active"),
+            sql`${blips.id} <> ${blipId}`
+          )
+        );
+      suggestGroup = { id: group.id, label: group.label, others: others[0]?.n ?? 0 };
+    }
+  }
+  return { ok: true as const, spaceName: space.name, suggestGroup };
 }
 
 /** Return a stored blip to the feed. */
 export async function unstoreBlip(blipId: string, spaceId: string) {
   await db
     .update(blips)
-    .set({ spaceId: null, nextReviewAt: null, updatedAt: new Date() })
+    .set({ spaceId: null, routedBy: null, nextReviewAt: null, updatedAt: new Date() })
     .where(and(eq(blips.id, blipId), eq(blips.spaceId, spaceId)));
   revalidateAll(spaceId);
   return { ok: true as const };
+}
+
+/**
+ * Triage a topic group: link it to the space and move all of its unstored,
+ * active blips there (regardless of the space's auto-intake switch, since the
+ * user asked explicitly). The group label is dropped from moved blips; the
+ * group itself stays linked so future captures with that label route here.
+ */
+function routeGroup(tx: Tx, groupId: string, spaceId: string): number {
+  tx.update(blipGroups).set({ spaceId }).where(eq(blipGroups.id, groupId)).run();
+  return tx
+    .update(blips)
+    .set({ spaceId, groupId: null, routedBy: null, updatedAt: new Date() })
+    .where(and(eq(blips.groupId, groupId), isNull(blips.spaceId), eq(blips.status, "active")))
+    .run().changes;
+}
+
+export async function routeGroupToSpace(groupId: string, spaceId: string) {
+  const [space] = await db.select().from(spaces).where(eq(spaces.id, spaceId)).limit(1);
+  if (!space) return { ok: false as const, error: "Space not found" };
+  const [group] = await db.select().from(blipGroups).where(eq(blipGroups.id, groupId)).limit(1);
+  if (!group) return { ok: false as const, error: "Group not found" };
+  const moved = db.transaction((tx) => routeGroup(tx, groupId, spaceId));
+  revalidateAll(spaceId);
+  return { ok: true as const, moved, spaceName: space.name };
+}
+
+/** Turn a topic group into a new space, moving its blips there. */
+export async function createSpaceFromGroup(
+  groupId: string,
+  input: {
+    name: string;
+    description?: string | null;
+    kind?: (typeof spaceKinds)[number];
+  }
+) {
+  const parsed = spaceSchema.safeParse({ ...input, autoIntake: true });
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid" };
+  }
+  const [group] = await db.select().from(blipGroups).where(eq(blipGroups.id, groupId)).limit(1);
+  if (!group) return { ok: false as const, error: "Group not found" };
+  if (await nameTaken(parsed.data.name)) {
+    return { ok: false as const, error: "A space with that name already exists" };
+  }
+  const id = randomUUID();
+  const moved = db.transaction((tx) => {
+    tx.insert(spaces)
+      .values({
+        id,
+        name: parsed.data.name,
+        description: parsed.data.description || null,
+        kind: parsed.data.kind,
+        autoIntake: true,
+        createdAt: new Date(),
+      })
+      .run();
+    let n = routeGroup(tx, groupId, id);
+    if (parsed.data.kind === "video") n += sweepVideoBlips(tx, id);
+    return n;
+  });
+  revalidateAll(id);
+  return { ok: true as const, id, moved };
 }

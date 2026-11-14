@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { unstoreBlip } from "@/actions/spaces";
 import type { Blip } from "@/db/schema";
 
+export function routedByNote(r: Blip["routedBy"]) {
+  if (r === "ai") return "Auto-sorted by AI · ";
+  if (r === "group") return "Auto-sorted by topic · ";
+  if (r === "rule") return "Auto-sorted by link type · ";
+  return "";
+}
+
 export function StoredBlipItem({
   blip,
   spaceId,
@@ -60,6 +67,7 @@ export function StoredBlipItem({
         {blip.summary && <p className="mt-1 text-sm">{blip.summary}</p>}
         <p className="mt-1 text-xs text-muted-foreground">
           {groupLabel ? `${groupLabel} · ` : ""}
+          {routedByNote(blip.routedBy)}
           <Link href={`/blips/${blip.id}`} className="underline">
             Open
           </Link>

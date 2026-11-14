@@ -13,6 +13,7 @@ import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { ensureVideoSpace } from "@/lib/video-space";
+import { pickRoute } from "@/lib/routing";
 
 const MAX_LINKS = 50;
 const FETCH_CONCURRENCY = 6;
@@ -57,6 +58,18 @@ function fallbackTitle(link: { text: string; url: string }, og: LinkMetadata) {
   }
 }
 
+/** Spaces the AI may route into: general spaces with auto-intake on (video routes by rule). */
+function aiEligibleSpaces(allSpaces: Space[]) {
+  return allSpaces.filter((s) => s.autoIntake && s.kind === "general");
+}
+function aiSpaceOptions(allSpaces: Space[]) {
+  return aiEligibleSpaces(allSpaces).map((s) => ({ name: s.name, description: s.description }));
+}
+function aiSpaceId(allSpaces: Space[], name: string | null | undefined): string | null {
+  if (!name) return null;
+  return aiEligibleSpaces(allSpaces).find((s) => s.name.toLowerCase() === name.toLowerCase())?.id ?? null;
+}
+
 type Enriched = { og: LinkMetadata; ai: OrganizedBlip | undefined };
 
 /** Fetch OG metadata, then ask the AI for titles/summaries/groups. Falls back to OG data. */
@@ -90,7 +103,8 @@ async function enrichLinks(
           nested: l.nested,
           og: metas[i],
         })),
-        preferredLabels
+        preferredLabels,
+        aiSpaceOptions(allSpaces)
       );
       usedAi = true;
     } catch (err) {
@@ -198,6 +212,11 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
     const title = ai?.title || fallbackTitle(link, og);
     const groupId = groups.resolve(ai?.group);
     const video = parseVideoUrl(link.url);
+    const route = pickRoute({
+      videoSpaceId: video ? videoSpaceId : null,
+      groupSpaceId: groups.spaceFor(groupId),
+      aiSpaceId: aiSpaceId(allSpaces, ai?.space),
+    });
     return {
       id: randomUUID(),
       content: `[${title}](${link.url})`,
@@ -207,7 +226,8 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
       url: link.url,
       siteName: og.siteName,
       groupId,
-      spaceId: (video && videoSpaceId) || groups.spaceFor(groupId),
+      spaceId: route?.spaceId ?? null,
+      routedBy: route?.routedBy ?? null,
       categoryId: null,
       status: "active" as const,
       nextReviewAt: null,
@@ -295,6 +315,14 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
         ai?.title || og.title || blip.title || fallbackTitle({ text: "", url: blip.url! }, og);
       const groupId = groups.resolve(ai?.group);
       const video = parseVideoUrl(blip.url);
+      // Never move a blip out of a space it is already stored in.
+      const route = blip.spaceId
+        ? null
+        : pickRoute({
+            videoSpaceId: video ? videoSpaceId : null,
+            groupSpaceId: groups.spaceFor(groupId),
+            aiSpaceId: aiSpaceId(allSpaces, ai?.space),
+          });
       return {
         id: blip.id,
         set: {
@@ -304,8 +332,8 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
           imageUrl: video?.thumbnailUrl ?? og.imageUrl ?? blip.imageUrl,
           siteName: og.siteName ?? blip.siteName,
           groupId,
-          // Never move a blip out of a space it is already stored in.
-          spaceId: blip.spaceId ?? ((video && videoSpaceId) || groups.spaceFor(groupId)),
+          spaceId: blip.spaceId ?? route?.spaceId ?? null,
+          routedBy: blip.spaceId ? blip.routedBy : (route?.routedBy ?? null),
           updatedAt: now,
         },
       };

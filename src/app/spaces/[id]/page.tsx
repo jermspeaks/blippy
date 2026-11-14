@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSpaceDetail } from "@/actions/spaces";
 import { SpaceManager } from "@/components/space-manager";
+import { VideoCard } from "@/components/video-card";
 import { StoredBlipItem } from "@/components/stored-blip-item";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,9 @@ export default async function SpaceDetailPage({
   const { space, blips, linkedGroups, availableGroups } = detail;
 
   return (
-    <div className="container mx-auto max-w-2xl px-8 py-8">
+    <div
+      className={`container mx-auto px-8 py-8 ${space.kind === "video" ? "max-w-7xl" : "max-w-2xl"}`}
+    >
       <p className="mb-2 text-sm">
         <Link href="/spaces" className="text-muted-foreground hover:underline">
           ← Spaces
@@ -27,7 +30,7 @@ export default async function SpaceDetailPage({
       {space.description && (
         <p className="mb-6 text-muted-foreground">{space.description}</p>
       )}
-      <div className="mb-8">
+      <div className="mb-8 max-w-2xl">
         <SpaceManager
           space={space}
           linkedGroups={linkedGroups}
@@ -41,6 +44,12 @@ export default async function SpaceDetailPage({
         <p className="text-muted-foreground">
           Nothing stored yet. Use Store on a feed card, or link a topic group above.
         </p>
+      ) : space.kind === "video" ? (
+        <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
+          {blips.map((b) => (
+            <VideoCard key={b.id} blip={b} spaceId={space.id} groupLabel={b.groupLabel} />
+          ))}
+        </div>
       ) : (
         <ul className="flex flex-col gap-2">
           {blips.map((b) => (

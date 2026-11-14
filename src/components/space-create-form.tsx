@@ -8,18 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSpace } from "@/actions/spaces";
+import type { SpaceKind } from "@/db/schema";
 
 export function SpaceCreateForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [kind, setKind] = useState<SpaceKind>("general");
   const [autoIntake, setAutoIntake] = useState(true);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await createSpace({ name, description, autoIntake });
+      const result = await createSpace({ name, description, autoIntake, kind });
       if (!result.ok) {
         toast.error(result.error);
         return;
@@ -56,6 +58,18 @@ export function SpaceCreateForm() {
           placeholder="What belongs here"
           maxLength={500}
         />
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="space-kind">Kind</Label>
+        <select
+          id="space-kind"
+          value={kind}
+          onChange={(e) => setKind(e.target.value as SpaceKind)}
+          className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+        >
+          <option value="general">General</option>
+          <option value="video">Video (YouTube links route here automatically)</option>
+        </select>
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input

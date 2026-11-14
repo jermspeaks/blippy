@@ -11,6 +11,8 @@ import { fetchLinkMetadata, type LinkMetadata } from "@/lib/og";
 import { organizeLinks, type OrganizedBlip } from "@/lib/ai/organize";
 import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
+import { parseVideoUrl } from "@/lib/video";
+import { ensureVideoSpace } from "@/lib/video-space";
 
 const MAX_LINKS = 50;
 const FETCH_CONCURRENCY = 6;
@@ -187,20 +189,25 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
 
   const now = new Date();
   const groups = makeGroupResolver(existingGroups, allSpaces, now);
+  // Video links route to the video space regardless of AI topic group.
+  const videoSpaceId = fresh.some((l) => parseVideoUrl(l.url))
+    ? (db.transaction((tx) => ensureVideoSpace(tx))?.id ?? null)
+    : null;
   const rows = fresh.map((link, i) => {
     const { og, ai } = enriched[i];
     const title = ai?.title || fallbackTitle(link, og);
     const groupId = groups.resolve(ai?.group);
+    const video = parseVideoUrl(link.url);
     return {
       id: randomUUID(),
       content: `[${title}](${link.url})`,
       title,
       summary: ai?.summary || og.description?.slice(0, 500) || null,
-      imageUrl: og.imageUrl,
+      imageUrl: video?.thumbnailUrl ?? og.imageUrl,
       url: link.url,
       siteName: og.siteName,
       groupId,
-      spaceId: groups.spaceFor(groupId),
+      spaceId: (video && videoSpaceId) || groups.spaceFor(groupId),
       categoryId: null,
       status: "active" as const,
       nextReviewAt: null,
@@ -278,23 +285,27 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
 
     const now = new Date();
     const groups = makeGroupResolver(existingGroups, allSpaces, now);
+    const videoSpaceId = chunk.some((b) => parseVideoUrl(b.url))
+      ? (db.transaction((tx) => ensureVideoSpace(tx))?.id ?? null)
+      : null;
     // Resolve groups first so new groups can be inserted before blips reference them.
     const updates = chunk.map((blip, i) => {
       const { og, ai } = enriched[i];
       const title =
         ai?.title || og.title || blip.title || fallbackTitle({ text: "", url: blip.url! }, og);
       const groupId = groups.resolve(ai?.group);
+      const video = parseVideoUrl(blip.url);
       return {
         id: blip.id,
         set: {
           title,
           content: `[${title}](${blip.url})`,
           summary: ai?.summary || og.description?.slice(0, 500) || blip.summary,
-          imageUrl: og.imageUrl ?? blip.imageUrl,
+          imageUrl: video?.thumbnailUrl ?? og.imageUrl ?? blip.imageUrl,
           siteName: og.siteName ?? blip.siteName,
           groupId,
           // Never move a blip out of a space it is already stored in.
-          spaceId: blip.spaceId ?? groups.spaceFor(groupId),
+          spaceId: blip.spaceId ?? ((video && videoSpaceId) || groups.spaceFor(groupId)),
           updatedAt: now,
         },
       };

@@ -25,7 +25,14 @@ export default async function SpacesPage() {
             <li key={space.id}>
               <Link href={`/spaces/${space.id}`}>
                 <Card className="h-full transition-colors hover:bg-muted/40">
-                  <CardHeader className="pb-1 font-medium">{space.name}</CardHeader>
+                  <CardHeader className="pb-1 font-medium">
+                    {space.name}
+                    {space.kind !== "general" && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {space.kind}
+                      </span>
+                    )}
+                  </CardHeader>
                   <CardContent className="space-y-1 text-sm text-muted-foreground">
                     {space.description && <p>{space.description}</p>}
                     <p>

@@ -15,7 +15,7 @@ Example input: a day's notes with Nvidia news links (one nested under another), 
 - **Links are extracted by regex, not by the AI:** deterministic, handles malformed lines (e.g. `Title](url)` with no opening bracket) and URLs containing parentheses. The AI only describes and groups.
 - **Image and metadata come from Open Graph/Twitter tags**, fetched server-side (8s timeout, 512 KB cap, redirects re-checked, private/loopback addresses blocked to prevent SSRF). The AI writes title and summary only.
 - **Plain `fetch` to provider APIs, no AI SDK:** two providers (OpenAI, Anthropic) don't justify a dependency. Provider and model are chosen in Settings; the model list is fetched live from the provider.
-- **API keys live in `.env.local`, never in the database:** `blippy.db` is tracked in git.
+- **API keys live in `.env.local`, never in the database:** keys stay out of the DB (which is also git-ignored).
 - **Graceful fallback:** with no key or a failed AI call, blips are still created from page metadata (with a warning). Reprocess refuses to overwrite data when the AI step fails.
 - **Prompt:** a built-in system prompt defines the JSON contract; users append instructions in Settings but cannot replace it. Generation settings (temperature, top P, max tokens, penalties) are optional; blank means provider default. OpenAI reasoning models (`o<digit>`, `gpt-5*`) skip sampling params (assumed to reject them).
 - **Grouping:** the AI returns a topic label per link. Groups with one member are dropped unless the label already exists. Existing group labels and space names are passed as preferred labels.

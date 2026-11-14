@@ -61,7 +61,7 @@ Reference docs live in `docs/` (ARCHITECTURE, DATA_MODEL, Testing, FUTURE). `REA
 
 ## Gotchas
 
-- `blippy.db` is tracked in git, so running or seeding the app shows up as a modified file. Don't commit it by accident.
+- `blippy.db` is git-ignored (`*.db`) and not tracked. After a fresh clone run `npm run db:migrate` (and optionally `npm run db:seed`) to create it.
 - Git: this app has its own repository; run git commands from this directory.
 
 ## More docs

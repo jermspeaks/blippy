@@ -15,4 +15,5 @@ One per feature or notable change. Start from [discovery/_template.md](discovery
 | --- | --- |
 | [AI link import](discovery/ai-link-import.md) | Built |
 | [Spaces](discovery/spaces.md) | Built |
+| [Video space](discovery/video-space.md) | Built |
 | [Lifecycle pathways](discovery/lifecycle-pathways.md) | Exploring (not designed) |

@@ -1,7 +1,8 @@
 "use server";
 
 import { db } from "@/db";
-import { blips, blipGroups, spaces } from "@/db/schema";
+import { blips, blipGroups, spaces, spaceKinds } from "@/db/schema";
+import { sweepVideoBlips } from "@/lib/video-space";
 import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -14,6 +15,7 @@ const spaceSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
   description: z.string().trim().max(500).optional().nullable(),
   autoIntake: z.boolean(),
+  kind: z.enum(spaceKinds).default("general"),
 });
 
 function revalidateAll(spaceId?: string) {
@@ -103,6 +105,7 @@ export async function createSpace(input: {
   name: string;
   description?: string | null;
   autoIntake: boolean;
+  kind?: (typeof spaceKinds)[number];
 }) {
   const parsed = spaceSchema.safeParse(input);
   if (!parsed.success) {
@@ -120,9 +123,11 @@ export async function createSpace(input: {
         name: parsed.data.name,
         description: parsed.data.description || null,
         autoIntake: parsed.data.autoIntake,
+        kind: parsed.data.kind,
         createdAt: new Date(),
       })
       .run();
+    if (parsed.data.kind === "video" && parsed.data.autoIntake) pulled += sweepVideoBlips(tx, id);
     // A topic group with the same name is the obvious home for this space.
     const match = tx
       .select()
@@ -131,7 +136,7 @@ export async function createSpace(input: {
       .all()[0];
     if (match) {
       tx.update(blipGroups).set({ spaceId: id }).where(eq(blipGroups.id, match.id)).run();
-      if (parsed.data.autoIntake) pulled = sweepSpace(tx, id);
+      if (parsed.data.autoIntake) pulled += sweepSpace(tx, id);
     }
   });
   revalidateAll();
@@ -159,7 +164,11 @@ export async function updateSpace(
       })
       .where(eq(spaces.id, id))
       .run();
-    if (parsed.data.autoIntake) pulled = sweepSpace(tx, id);
+    if (parsed.data.autoIntake) {
+      pulled = sweepSpace(tx, id);
+      const kind = tx.select({ kind: spaces.kind }).from(spaces).where(eq(spaces.id, id)).get()?.kind;
+      if (kind === "video") pulled += sweepVideoBlips(tx, id);
+    }
   });
   revalidateAll(id);
   return { ok: true as const, pulled };

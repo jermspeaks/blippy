@@ -3,6 +3,10 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 export const blipStatuses = ["active", "matured", "fizzled"] as const;
 export type BlipStatus = (typeof blipStatuses)[number];
 
+// Specialized spaces render and intake differently. Add new kinds here.
+export const spaceKinds = ["general", "video"] as const;
+export type SpaceKind = (typeof spaceKinds)[number];
+
 export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -13,6 +17,7 @@ export const spaces = sqliteTable("spaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  kind: text("kind", { enum: spaceKinds }).notNull().default("general"),
   // When true, blips whose topic group is linked to this space are stored here on import.
   autoIntake: integer("auto_intake", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),

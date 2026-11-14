@@ -5,13 +5,22 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSpace } from "@/actions/spaces";
 import type { SpaceKind } from "@/db/schema";
 
-export function SpaceCreateForm() {
+export function SpaceCreateDialog() {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [kind, setKind] = useState<SpaceKind>("general");
@@ -33,14 +42,27 @@ export function SpaceCreateForm() {
       );
       setName("");
       setDescription("");
+      setOpen(false);
       router.push(`/spaces/${result.id}`);
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border p-4">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="size-4" />
+          New space
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New space</DialogTitle>
+          <DialogDescription>A place to keep blips that have found a home.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
       <div className="space-y-1">
-        <Label htmlFor="space-name">New space</Label>
+        <Label htmlFor="space-name">Name</Label>
         <Input
           id="space-name"
           value={name}
@@ -83,6 +105,8 @@ export function SpaceCreateForm() {
         <Plus className="size-4" />
         Create space
       </Button>
-    </form>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

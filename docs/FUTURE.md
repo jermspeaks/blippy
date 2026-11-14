@@ -30,7 +30,4 @@ Blips should be able to progress, or die out, along paths that depend on what th
 
 ## Exploratory
 
-General spaces vs. specialized spaces.
-- YouTube and other video sites can route correctly to this
-
 A list of routing command center to understand how the links will automatically filter correctly.

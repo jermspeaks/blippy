@@ -7,13 +7,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 
-export default async function FeedPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ categoryId?: string }>;
-}) {
-  const { categoryId } = await searchParams;
-  const blips = await getFeedBlips(categoryId ?? null);
+export default async function FeedPage() {
+  const blips = await getFeedBlips();
   const sections = buildFeedSections(blips);
   const spaces = await listSpaces();
 

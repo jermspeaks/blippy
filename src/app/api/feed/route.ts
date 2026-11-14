@@ -1,8 +1,6 @@
 import { getFeedBlips } from "@/actions/blips";
-import { NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const categoryId = request.nextUrl.searchParams.get("categoryId") ?? undefined;
-  const blips = await getFeedBlips(categoryId);
+export async function GET() {
+  const blips = await getFeedBlips();
   return Response.json(blips);
 }

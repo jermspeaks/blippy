@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { blips, blipGroups, spaces, spaceKinds } from "@/db/schema";
+import { blips, blipGroups, spaces, spaceKinds, routingRules } from "@/db/schema";
 import { sweepVideoBlips } from "@/lib/video-space";
 import { and, asc, count, eq, inArray, isNull, max, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -184,14 +184,16 @@ export async function updateSpace(
   return { ok: true as const, pulled };
 }
 
-/** Deleting a space returns its blips to the feed and frees its groups. */
+/** Deleting a space returns its blips to the feed, frees its groups and drops its routing rules. */
 export async function deleteSpace(id: string) {
   db.transaction((tx) => {
     tx.update(blips).set({ spaceId: null, updatedAt: new Date() }).where(eq(blips.spaceId, id)).run();
     tx.update(blipGroups).set({ spaceId: null }).where(eq(blipGroups.spaceId, id)).run();
+    tx.delete(routingRules).where(eq(routingRules.spaceId, id)).run();
     tx.delete(spaces).where(eq(spaces.id, id)).run();
   });
   revalidateAll();
+  revalidatePath("/routing");
   return { ok: true as const };
 }
 

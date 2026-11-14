@@ -2,14 +2,15 @@
 
 Blip cultivation: capture small sparks of attention (questions, ideas, themes), resurface them in a feed, and cultivate or let them go.
 
-**Phase 1** is web-only: SQLite-backed blips, a resurfacing feed, quick capture, categories, snooze/fizzle, and settings (theme + profile placeholder).
+**Phase 1** is web-only: SQLite-backed blips, a resurfacing feed, quick capture, spaces, snooze/fizzle, and settings (theme + profile placeholder).
 
 ## Features
 
-- **Feed** — Blips due for review (or never scheduled), with optional category filter. Open, snooze, or fizzle from the card.
-- **Quick capture** — Add a blip with optional category (including Uncategorized).
-- **Blip detail** — View and edit content/category, snooze, or fizzle.
-- **Categories** — List categories with blip counts; link to filter the feed by category or Uncategorized.
+- **Feed** — Blips due for review (or never scheduled). Open, snooze, store in a space, or fizzle from the card.
+- **Quick capture** — Paste markdown notes; each link becomes a blip.
+- **Blip detail** — View and edit content, snooze, or fizzle.
+- **Snoozed** — `/spaces/snoozed` lists snoozed blips so you can unsnooze them.
+- **Routing** — Domain rules (e.g. github.com → a space), the AI prompt, and a log of where each link went and why.
 - **Settings** — Theme (Light / Dark / System), profile placeholder for later.
 
 ## Tech stack
@@ -60,7 +61,6 @@ React 19, Next.js (App Router), TypeScript (strict), Tailwind CSS v4, shadcn/ui 
 | `npm run db:generate`   | Generate Drizzle migrations                |
 | `npm run db:migrate`    | Apply migrations                           |
 | `npm run db:push`       | Push schema (dev)                          |
-| `npm run db:seed`       | Seed Uncategorized category                |
 
 ## Documentation
 

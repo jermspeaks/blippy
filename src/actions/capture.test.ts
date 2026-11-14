@@ -62,7 +62,14 @@ import { db } from "@/db";
 import { blips, spaces } from "@/db/schema";
 import { createSpace } from "./spaces";
 import { importMarkdown } from "./capture";
-import { listRoutingEvents, routingTotals } from "./routing";
+import {
+  listRoutingEvents,
+  routingTotals,
+  createRoutingRule,
+  deleteRoutingRule,
+  listRoutingRules,
+} from "./routing";
+import { deleteSpace } from "./spaces";
 
 beforeAll(() => migrate(db, { migrationsFolder: "drizzle" }));
 
@@ -149,5 +156,45 @@ describe("capture routing + audit log", () => {
       .from(blips)
       .where(eq(blips.url, "https://example.com/book2"));
     expect(b.spaceId).toBeNull();
+  });
+
+  it("routes by a domain rule ahead of the AI, and deleting the space drops the rule", async () => {
+    const dev = await createSpace({ name: "Dev Tools", autoIntake: true });
+    if (!dev.ok) throw new Error("setup failed");
+    expect(
+      await createRoutingRule({ pattern: "nope", spaceId: dev.id })
+    ).toMatchObject({ ok: false });
+    const made = await createRoutingRule({
+      pattern: "https://www.Docs.example.com/",
+      spaceId: dev.id,
+    });
+    expect(made).toEqual({ ok: true, pattern: "docs.example.com" });
+    expect(
+      await createRoutingRule({ pattern: "docs.example.com", spaceId: dev.id })
+    ).toMatchObject({ ok: false });
+
+    // The mock AI would send ".../book" to Books; the rule must win.
+    await importMarkdown("[Guide](https://docs.example.com/book)");
+    const [ev] = (await listRoutingEvents("rule")).filter(
+      (e) => e.url === "https://docs.example.com/book"
+    );
+    expect(ev).toMatchObject({ spaceName: "Dev Tools", routedBy: "rule" });
+    expect(ev.reason).toBe("Domain rule: docs.example.com");
+
+    expect(await listRoutingRules()).toHaveLength(1);
+    await deleteSpace(dev.id);
+    expect(await listRoutingRules()).toHaveLength(0);
+    const rule = await createRoutingRule({
+      pattern: "x.example.com",
+      spaceId: (
+        (await createSpace({ name: "Tmp", autoIntake: false })) as {
+          id: string;
+        }
+      ).id,
+    });
+    if (!rule.ok) throw new Error("rule failed");
+    const [r] = await listRoutingRules();
+    await deleteRoutingRule(r.id);
+    expect(await listRoutingRules()).toHaveLength(0);
   });
 });

@@ -1,6 +1,6 @@
 # Routing command center
 
-- **Status:** In progress (step 1 built; rest designed)
+- **Status:** Mostly built (domain rules, page and audit log done; manual-correction logging open)
 - **Date started:** 2026-11-14
 - **Related:** [inbox-routing.md](inbox-routing.md), [spaces.md](spaces.md), [../FUTURE.md](../FUTURE.md) (Exploratory), `src/lib/routing.ts`, `src/lib/ai/prompt.ts`
 
@@ -17,15 +17,15 @@ One place to see and control how links automatically get filtered: which rules e
 
 ## Open questions
 
-- Should rules be user-editable beyond kind (e.g. "domain github.com -> Dev Tools")? A deterministic domain rule list would be cheaper and more predictable than AI.
+- Should rules go beyond host + path prefix (regex, keywords)? Not yet; revisit if the log shows misroutes host rules can't express.
 
 ## Design (phased)
 
 1. **Per-space AI-routing switch (built):** `spaces.ai_routing` (migration 0005), checkbox in the space Settings dialog (general spaces only), "AI routing" column on the spaces table, `aiEligibleSpaces` (in `src/lib/routing.ts`) honors it alongside auto-intake. Tests in `routing.test.ts` and `spaces.test.ts`.
-2. **Routing page (`/routing`):** lists the routing order (rule -> linked group -> AI), the active rules (video), each space with its linked groups, auto-intake and AI-routing state, and the current AI instructions (built-in prompt + Settings additions, read-only).
-3. **Routing reason + audit log (built):** the AI returns a short `reason` with each `space` pick. Every capture/reprocess decision (including "left in the feed") is written to the `routing_events` audit table (migration 0006) with the blip title, URL, space name, `routed_by`, reason and source; entries survive blip/space deletion. `blips.routed_reason` also holds the reason, shown as a tooltip on the "Auto-sorted" note in space views. Rule and group routes get fixed reasons. The log is the `/routing` page (sidebar "Routing"): totals per outcome, filters (AI / topic group / link type / left in feed), latest 200. Tests: `capture.test.ts` (mocked OG + AI), `routing.test.ts`, `organize.test.ts`.
-3b. **Global routing instructions:** an editable block (Settings or `/routing`) appended to the routing part of the prompt; the page shows the built-in prompt read-only above it.
-4. **Domain rules:** `routing_rules` table (`pattern`, `space_id`), evaluated before group/AI in `pickRoute`; editable on the page.
+2. **Routing page (built):** `/routing` explains the routing order (domain rule -> link type -> topic group -> AI), lists domain rules, shows each space with its linked groups, auto-intake and AI-routing state, and shows the built-in prompt plus the user's Settings additions (read-only).
+3. **Routing reason + audit log (built):** the AI returns a short `reason` with each `space` pick. Every capture/reprocess decision (including "left in the feed") is written to the `routing_events` audit table (migration 0006) with the blip title, URL, space name, `routed_by`, reason and source; entries survive blip/space deletion. `blips.routed_reason` also holds the reason, shown as a tooltip on the "Auto-sorted" note in space views. Rule and group routes get fixed reasons. The log is the `/routing` page (sidebar "Routing"): totals per outcome, filters (AI / topic group / rule / left in feed), latest 200. Tests: `capture.test.ts` (mocked OG + AI), `routing.test.ts`, `organize.test.ts`.
+3b. **Global routing instructions (built, via Settings):** the existing "additional instructions" setting is appended to the prompt; `/routing` displays it and the built-in prompt read-only and links to Settings rather than duplicating the editor.
+4. **Domain rules (built):** `routing_rules` table (migration 0008; `pattern` = normalized `host[/path]`, `space_id`), evaluated first in `pickRoute` (ahead of the video rule, group and AI), reason "Domain rule: <pattern>", logged as `routed_by = rule`. Matches subdomains and path prefixes at segment boundaries; the longest pattern wins. Add/delete on `/routing`; rules are removed when their space is deleted. Tests: `routing.test.ts`, `capture.test.ts`.
 5. **Routing history:** covered by the audit log above; remaining work is surfacing it in the [capture result panel](capture-result-panel.md) and logging manual corrections (store / return to feed / group moves) as events.
 
 ## Out of scope / later
@@ -36,5 +36,6 @@ One place to see and control how links automatically get filtered: which rules e
 
 - [x] Step 1: AI-routing switch.
 - [x] Step 3: routing reason + audit log (`/routing`).
-- [ ] Step 2: command-center explanation (routing order, rules, prompt) on the `/routing` page.
+- [x] Step 2: command-center explanation on the `/routing` page.
+- [x] Step 4: domain rules.
 - [ ] Log manual corrections as audit events.

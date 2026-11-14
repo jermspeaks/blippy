@@ -1,18 +1,8 @@
 # Data model
 
-Phase 1 uses four tables (`categories`, `blips`, `blip_groups`, `app_settings`). The canonical schema is in `src/db/schema.ts` (Drizzle).
+Tables: `blips`, `blip_groups`, `spaces`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
 
 ## Tables
-
-### categories
-
-| Column     | Type    | Constraints | Description                      |
-| ---------- | ------- | ----------- | -------------------------------- |
-| id         | text    | PK          | Unique id (e.g. `uncategorized`) |
-| name       | text    | NOT NULL    | Display name                     |
-| created_at | integer | NOT NULL    | Timestamp (mode: timestamp)      |
-
-- One row represents “Uncategorized” (id `uncategorized`); other categories are user-defined later.
 
 ### blips
 
@@ -20,14 +10,13 @@ Phase 1 uses four tables (`categories`, `blips`, `blip_groups`, `app_settings`).
 | -------------- | ------- | ---------------------------- | ---------------------------------------------- |
 | id             | text    | PK                           | UUID                                           |
 | content        | text    | NOT NULL                     | Blip body                                      |
-| category_id    | text    | nullable, FK → categories.id | Category or null (uncategorized)               |
 | status         | text    | NOT NULL, default `active`   | `active` \| `matured` \| `fizzled`             |
 | next_review_at | integer | nullable                     | Timestamp (mode: timestamp); when to resurface |
 | created_at     | integer | NOT NULL                     | Timestamp                                      |
 | updated_at     | integer | NOT NULL                     | Timestamp                                      |
 
 - **status:** `active` = in feed/cultivation; `matured` = graduated; `fizzled` = terminal, no longer shown in feed.
-- **next_review_at:** Used for feed: “due” when `next_review_at <= today` or null. Snooze sets this to a future date.
+- **next_review_at:** Used for feed: “due” when `next_review_at <= today` or null. Snooze sets this to a future date; feed blips snoozed past today are listed (and can be unsnoozed) at `/spaces/snoozed`.
 
 ### blips: link-card columns
 
@@ -41,24 +30,24 @@ Populated by the markdown import on the Capture page; all nullable (null for pla
 
 Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider>`. API keys are NOT stored here; they come from env vars.
 
+### routing_rules
+
+`id` (PK), `pattern` (unique; normalized `host[/path]`, e.g. `github.com/vercel`), `space_id` (FK → `spaces.id`, NOT NULL), `created_at`. Links whose host (or subdomain) and optional path prefix match go to the space, ahead of every other routing step. Rules are deleted with their space.
+
 ## Relationships
 
-- **categories → blips:** One category has many blips (`category_id` FK). Blips with `category_id IS NULL` are “Uncategorized”.
+- **spaces → routing_rules:** one space has many rules (`space_id` FK).
 
 ## ER (conceptual)
 
 ```mermaid
 erDiagram
-  categories ||--o{ blips : has
-  categories {
-    string id PK
-    string name
-    datetime created_at
-  }
+  spaces ||--o{ blips : stores
+  spaces ||--o{ routing_rules : has
   blips {
     string id PK
     text content
-    string category_id FK
+    string space_id FK
     string status
     datetime next_review_at
     datetime created_at
@@ -70,7 +59,6 @@ erDiagram
 
 - Generated with: `npm run db:generate`
 - Applied with: `npm run db:migrate`
-- Seed (e.g. Uncategorized): `npm run db:seed`
 
 Additional `app_settings` keys: `ai.instructions` (extra prompt text appended to the built-in system prompt) and `ai.options` (JSON: temperature, topP, maxOutputTokens, frequencyPenalty, presencePenalty; absent fields use provider defaults).
 

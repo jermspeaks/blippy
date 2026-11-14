@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   PlusCircle,
-  FolderOpen,
   Layers,
   Route,
   Settings,
@@ -21,7 +20,6 @@ const navItems = [
   { href: "/capture", label: "Capture", icon: PlusCircle },
   { href: "/spaces", label: "Spaces", icon: Layers },
   { href: "/routing", label: "Routing", icon: Route },
-  { href: "/categories", label: "Categories", icon: FolderOpen },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

@@ -6,7 +6,9 @@ import {
   blipGroups,
   spaces,
   routingEvents,
+  routingRules,
   type BlipGroup,
+  type RoutingRule,
   type Space,
 } from "@/db/schema";
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
@@ -20,7 +22,7 @@ import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { ensureVideoSpace } from "@/lib/video-space";
-import { pickRoute, aiEligibleSpaces, inboxReason } from "@/lib/routing";
+import { pickRoute, aiEligibleSpaces, inboxReason, matchRule } from "@/lib/routing";
 
 const MAX_LINKS = 50;
 const FETCH_CONCURRENCY = 6;
@@ -111,11 +113,13 @@ async function enrichLinks(
   usedAi: boolean;
   existingGroups: BlipGroup[];
   allSpaces: Space[];
+  rules: RoutingRule[];
 }> {
   const metas = await mapLimit(links, FETCH_CONCURRENCY, (l) => fetchLinkMetadata(l.url));
   const config = await getAiConfig();
   const existingGroups = await db.select().from(blipGroups);
   const allSpaces = await db.select().from(spaces);
+  const rules = await db.select().from(routingRules);
   // Space names are preferred labels, so related links land in the matching space.
   const preferredLabels = Array.from(
     new Set([...existingGroups.map((g) => g.label), ...allSpaces.map((x) => x.name)])
@@ -153,6 +157,7 @@ async function enrichLinks(
     usedAi,
     existingGroups,
     allSpaces,
+    rules,
   };
 }
 
@@ -229,7 +234,7 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
     };
   }
 
-  const { enriched, usedAi, existingGroups, allSpaces } = await enrichLinks(fresh, warnings);
+  const { enriched, usedAi, existingGroups, allSpaces, rules } = await enrichLinks(fresh, warnings);
 
   const now = new Date();
   const groups = makeGroupResolver(existingGroups, allSpaces, now);
@@ -250,6 +255,7 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
     const groupId = groups.resolve(ai?.group);
     const video = parseVideoUrl(link.url);
     const route = pickRoute({
+      domainRule: matchRule(link.url, rules),
       videoSpaceId: video ? videoSpaceId : null,
       groupSpaceId: groups.spaceFor(groupId),
       aiSpaceId: aiSpaceId(allSpaces, ai?.space),
@@ -281,7 +287,6 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
       spaceId: route?.spaceId ?? null,
       routedBy: route?.routedBy ?? null,
       routedReason: route?.reason ?? null,
-      categoryId: null,
       status: "active" as const,
       nextReviewAt: null,
       createdAt: now,
@@ -346,7 +351,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
   for (let start = 0; start < targets.length; start += MAX_LINKS) {
     const chunk = targets.slice(start, start + MAX_LINKS);
     const chunkWarnings: string[] = [];
-    const { enriched, usedAi, existingGroups, allSpaces } = await enrichLinks(
+    const { enriched, usedAi, existingGroups, allSpaces, rules } = await enrichLinks(
       chunk.map((b) => ({ url: b.url!, text: b.title ?? "", nested: false })),
       chunkWarnings
     );
@@ -379,6 +384,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
       const route = blip.spaceId
         ? null
         : pickRoute({
+            domainRule: matchRule(blip.url!, rules),
             videoSpaceId: video ? videoSpaceId : null,
             groupSpaceId: groups.spaceFor(groupId),
             aiSpaceId: aiSpaceId(allSpaces, ai?.space),

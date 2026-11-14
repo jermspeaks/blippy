@@ -44,9 +44,9 @@ flowchart LR
 
 ## Domains
 
-- **Blips:** Core entity; capture, feed, detail, snooze, fizzle, categories.
-- **Categories:** List and filter; “Uncategorized” for `categoryId = null`.
-- **Feed:** Resurfacing list (due or null `nextReviewAt`, active status, optional category filter).
+- **Blips:** Core entity; capture, feed, detail, snooze (with a snoozed list at `/spaces/snoozed`), fizzle.
+- **Routing:** `/routing` shows the routing order, user domain rules, per-space routing state, the AI prompt and the audit log.
+- **Feed:** Resurfacing list (due or null `nextReviewAt`, active status, not stored in a space).
 - **Settings:** Theme (next-themes), profile placeholder (Phase 1).
 
 ## Key files

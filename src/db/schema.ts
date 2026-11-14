@@ -11,12 +11,6 @@ export type SpaceKind = (typeof spaceKinds)[number];
 export const routedByValues = ["rule", "group", "ai"] as const;
 export type RoutedBy = (typeof routedByValues)[number];
 
-export const categories = sqliteTable("categories", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-});
-
 export const spaces = sqliteTable("spaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -45,7 +39,6 @@ export const appSettings = sqliteTable("app_settings", {
 export const blips = sqliteTable("blips", {
   id: text("id").primaryKey(),
   content: text("content").notNull(),
-  categoryId: text("category_id").references(() => categories.id),
   // Link-card fields (populated by markdown import; null for plain blips)
   title: text("title"),
   summary: text("summary"),
@@ -80,10 +73,20 @@ export const routingEvents = sqliteTable("routing_events", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
-export type Category = typeof categories.$inferSelect;
-export type NewCategory = typeof categories.$inferInsert;
+// User-defined "links from this site go to this space" rules, checked first at capture.
+export const routingRules = sqliteTable("routing_rules", {
+  id: text("id").primaryKey(),
+  // Normalized: lowercase host (no scheme or www), optional path prefix, e.g. "github.com/vercel".
+  pattern: text("pattern").notNull().unique(),
+  spaceId: text("space_id")
+    .notNull()
+    .references(() => spaces.id),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
 export type Space = typeof spaces.$inferSelect;
 export type BlipGroup = typeof blipGroups.$inferSelect;
 export type Blip = typeof blips.$inferSelect;
 export type NewBlip = typeof blips.$inferInsert;
 export type RoutingEvent = typeof routingEvents.$inferSelect;
+export type RoutingRule = typeof routingRules.$inferSelect;

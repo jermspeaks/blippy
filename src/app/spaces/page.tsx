@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { listSpacesWithCounts } from "@/actions/spaces";
+import { listSnoozedBlips } from "@/actions/blips";
+import { Button } from "@/components/ui/button";
+import { CalendarClock } from "lucide-react";
 import { SortDialog } from "@/components/sort-dialog";
 import { formatAdded } from "@/lib/space-sort";
 import {
@@ -26,6 +29,7 @@ export default async function SpacesPage({
 }) {
   const sort = parseSpacesListSort((await searchParams).sort);
   const spaces = sortSpaces(await listSpacesWithCounts(), sort);
+  const snoozedCount = (await listSnoozedBlips()).length;
 
   return (
     <div className="container mx-auto max-w-4xl px-8 py-8">
@@ -38,6 +42,12 @@ export default async function SpacesPage({
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/spaces/snoozed">
+              <CalendarClock className="size-4" />
+              Snoozed ({snoozedCount})
+            </Link>
+          </Button>
           <SortDialog
             current={sort}
             options={spacesListSortLabels}

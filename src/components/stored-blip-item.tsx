@@ -14,7 +14,7 @@ import type { Blip } from "@/db/schema";
 export function routedByNote(r: Blip["routedBy"]) {
   if (r === "ai") return "Auto-sorted by AI · ";
   if (r === "group") return "Auto-sorted by topic · ";
-  if (r === "rule") return "Auto-sorted by link type · ";
+  if (r === "rule") return "Auto-sorted by rule · ";
   return "";
 }
 

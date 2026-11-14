@@ -6,7 +6,7 @@ Phase 1 is implemented. These items are for later work (other agents or you).
 
 - Refine SRS algorithm: intervals, streak, configurable “blips per day” or max feed size.
 - Snooze presets (e.g. +1 day, +1 week, custom).
-- Optional per-category feed limits.
+- Optional per-space feed limits (categories were removed).
 
 ## Phase 3: Moves and maturity
 
@@ -30,9 +30,9 @@ Blips should be able to progress, or die out, along paths that depend on what th
 
 ## Exploratory
 
-### Routing command center
+### Routing command center (mostly done)
 
-A list of routing command center to understand how the links will automatically filter correctly. This might include the instructions that the AI uses to decide where a link belongs.
+Built: `/routing` page with routing order, domain rules, per-space state, AI prompt and audit log. Open: log manual corrections as events and show the log in the capture result panel. See [plan](discovery/routing-command-center.md).
 
 ### Specialized spaces
 
@@ -40,15 +40,15 @@ We started with youtube, but we need one for Github since there's ways to pull m
 
 ### Decisions API
 
-I want to utilize the new decisions API to automate the routing of blips to the appropriate spaces. Let's figure out how to integrate it.
+I want to utilize the new decisions API to automate the routing of blips to the appropriate spaces. Let's figure out how to integrate it. Domain rules now cover the deterministic cases, so this only needs to handle what rules miss.
 
-### View snoozed blips
+### View snoozed blips (done)
 
-In the spaces I want to see a list of snoozed blips so I can unsnooze them when I'm ready.
+Snoozed blips are listed at `/spaces/snoozed` (linked from Spaces) with an Unsnooze action. Next: snooze presets (+1 week, custom).
 
-### Removing categories
+### Removing categories (done)
 
-It doesn't appear very useful to see these now we have spaces.
+Categories were removed (UI, actions, schema; migration 0007).
 
 ### Groups management page (`/groups`)
 

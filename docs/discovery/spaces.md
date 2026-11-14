@@ -38,5 +38,5 @@ Server actions in `src/actions/spaces.ts` (create/update/delete, link/unlink gro
 
 ## Follow-ups
 
-- [ ] Decide on categories as an intake key.
+- [x] Categories removed entirely (migration 0007); spaces and topic groups replace them.
 - [ ] Move-between-spaces action.

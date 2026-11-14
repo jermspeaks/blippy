@@ -29,6 +29,8 @@ export function BlipCard({ blip, spaces = [] }: { blip: Blip; spaces?: Space[] }
   const [isPending, startTransition] = useTransition();
   const [imageFailed, setImageFailed] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = useState("");
+  const selectedSpace = spaces.find((s) => String(s.id) === selectedSpaceId);
 
   function handleSnooze() {
     const next = new Date();
@@ -179,25 +181,32 @@ export function BlipCard({ blip, spaces = [] }: { blip: Blip; spaces?: Space[] }
               .
             </p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {spaces.map((space) => (
-                <li key={space.id}>
-                  <Button
-                    variant="outline"
-                    className="h-auto w-full flex-col items-start gap-0.5 py-2 text-left"
-                    onClick={() => handleStore(space)}
-                    disabled={isPending}
-                  >
-                    <span>{space.name}</span>
-                    {space.description && (
-                      <span className="text-xs font-normal text-muted-foreground">
-                        {space.description}
-                      </span>
-                    )}
-                  </Button>
-                </li>
-              ))}
-            </ul>
+            <div className="space-y-3">
+              <select
+                aria-label="Space"
+                value={selectedSpaceId}
+                onChange={(e) => setSelectedSpaceId(e.target.value)}
+                className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
+              >
+                <option value="">Choose a space…</option>
+                {spaces.map((space) => (
+                  <option key={space.id} value={space.id}>
+                    {space.name}
+                  </option>
+                ))}
+              </select>
+              {selectedSpace?.description && (
+                <p className="text-xs text-muted-foreground">{selectedSpace.description}</p>
+              )}
+              <Button
+                size="sm"
+                disabled={isPending || !selectedSpace}
+                onClick={() => selectedSpace && handleStore(selectedSpace)}
+              >
+                <Archive className="size-4" />
+                Store
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>

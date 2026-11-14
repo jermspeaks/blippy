@@ -12,16 +12,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { spaceSorts, spaceSortLabels, type SpaceSort } from "@/lib/space-sort";
 
-export function SpaceSortDialog({ current }: { current: SpaceSort }) {
+/**
+ * Sort picker that stores the choice in the `?sort=` URL param, so the
+ * server-rendered page re-sorts. The default option leaves the URL clean.
+ */
+export function SortDialog({
+  current,
+  options,
+  defaultValue,
+  title = "Sort",
+}: {
+  current: string;
+  options: Record<string, string>;
+  defaultValue: string;
+  title?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  function choose(sort: SpaceSort) {
+  function choose(value: string) {
     setOpen(false);
-    router.push(sort === "newest" ? pathname : `${pathname}?sort=${sort}`);
+    router.push(
+      value === defaultValue ? pathname : `${pathname}?sort=${value}`
+    );
   }
 
   return (
@@ -34,26 +49,24 @@ export function SpaceSortDialog({ current }: { current: SpaceSort }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Sort blips</DialogTitle>
-          <DialogDescription>
-            Currently: {spaceSortLabels[current]}.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>Currently: {options[current]}.</DialogDescription>
         </DialogHeader>
         <div
           className="flex flex-col gap-2"
           role="radiogroup"
           aria-label="Sort order"
         >
-          {spaceSorts.map((s) => (
+          {Object.entries(options).map(([value, label]) => (
             <Button
-              key={s}
+              key={value}
               role="radio"
-              aria-checked={s === current}
-              variant={s === current ? "default" : "outline"}
+              aria-checked={value === current}
+              variant={value === current ? "default" : "outline"}
               className="justify-start"
-              onClick={() => choose(s)}
+              onClick={() => choose(value)}
             >
-              {spaceSortLabels[s]}
+              {label}
             </Button>
           ))}
         </div>

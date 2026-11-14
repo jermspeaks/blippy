@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { blips, blipGroups, spaces, spaceKinds } from "@/db/schema";
 import { sweepVideoBlips } from "@/lib/video-space";
-import { and, asc, count, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, max, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -65,11 +65,12 @@ export async function listSpaces() {
 export async function listSpacesWithCounts() {
   const rows = await listSpaces();
   const counts = await db
-    .select({ spaceId: blips.spaceId, n: count() })
+    .select({ spaceId: blips.spaceId, n: count(), lastAddedAt: max(blips.createdAt) })
     .from(blips)
     .where(and(sql`${blips.spaceId} IS NOT NULL`, ne(blips.status, "fizzled")))
     .groupBy(blips.spaceId);
   const byId = new Map(counts.map((c) => [c.spaceId, c.n]));
+  const lastById = new Map(counts.map((c) => [c.spaceId, c.lastAddedAt]));
   const groupRows = await db
     .select({ spaceId: blipGroups.spaceId, n: count() })
     .from(blipGroups)
@@ -79,6 +80,8 @@ export async function listSpacesWithCounts() {
   return rows.map((s) => ({
     ...s,
     blipCount: byId.get(s.id) ?? 0,
+    // Newest "added" date among the space's blips (what the space page shows).
+    lastAddedAt: lastById.get(s.id) ?? null,
     groupCount: groupsById.get(s.id) ?? 0,
   }));
 }

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSpaceDetail } from "@/actions/spaces";
 import { SpaceManager } from "@/components/space-manager";
-import { SpaceSortDialog } from "@/components/space-sort-dialog";
-import { parseSpaceSort, sortBlips } from "@/lib/space-sort";
+import { SortDialog } from "@/components/sort-dialog";
+import { parseSpaceSort, sortBlips, spaceSortLabels } from "@/lib/space-sort";
 import { VideoCard } from "@/components/video-card";
 import { StoredBlipItem } from "@/components/stored-blip-item";
 
@@ -40,7 +40,12 @@ export default async function SpaceDetailPage({
           )}
         </div>
         <div className="flex gap-2">
-          <SpaceSortDialog current={sort} />
+          <SortDialog
+            current={sort}
+            options={spaceSortLabels}
+            defaultValue="newest"
+            title="Sort blips"
+          />
           <SpaceManager
             space={space}
             linkedGroups={linkedGroups}

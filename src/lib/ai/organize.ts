@@ -17,6 +17,8 @@ export type OrganizedBlip = {
   group: string | null;
   /** Canonical name of an existing space this link clearly belongs to, or null. */
   space: string | null;
+  /** Short explanation for the space pick; null when no space was chosen. */
+  reason: string | null;
 };
 
 export type SpaceOption = { name: string; description: string | null };
@@ -29,6 +31,7 @@ const itemSchema = z.object({
   summary: z.string().nullish(),
   group: z.string().nullish(),
   space: z.string().nullish(),
+  reason: z.string().nullish(),
 });
 const responseSchema = z.object({ blips: z.array(z.unknown()) });
 
@@ -69,12 +72,14 @@ export async function organizeLinks(
     const item = itemSchema.safeParse(entry);
     if (!item.success) continue;
     const b = item.data;
+    const space = spaceByLower.get((b.space ?? "").trim().toLowerCase()) ?? null;
     byId.set(b.id, {
       // Empty strings let the caller fall back to page metadata.
       title: (b.title ?? "").trim().slice(0, 200),
       summary: (b.summary ?? "").trim().slice(0, 500),
       group: b.group?.trim() || null,
-      space: spaceByLower.get((b.space ?? "").trim().toLowerCase()) ?? null,
+      space,
+      reason: space ? (b.reason ?? "").trim().slice(0, 200) || null : null,
     });
   }
 

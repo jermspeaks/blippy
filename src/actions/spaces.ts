@@ -220,7 +220,7 @@ export async function storeBlip(blipId: string, spaceId: string) {
   const [blip] = await db.select().from(blips).where(eq(blips.id, blipId)).limit(1);
   await db
     .update(blips)
-    .set({ spaceId, routedBy: null, updatedAt: new Date() })
+    .set({ spaceId, routedBy: null, routedReason: null, updatedAt: new Date() })
     .where(eq(blips.id, blipId));
   revalidateAll(spaceId);
 
@@ -251,7 +251,7 @@ export async function storeBlip(blipId: string, spaceId: string) {
 export async function unstoreBlip(blipId: string, spaceId: string) {
   await db
     .update(blips)
-    .set({ spaceId: null, routedBy: null, nextReviewAt: null, updatedAt: new Date() })
+    .set({ spaceId: null, routedBy: null, routedReason: null, nextReviewAt: null, updatedAt: new Date() })
     .where(and(eq(blips.id, blipId), eq(blips.spaceId, spaceId)));
   revalidateAll(spaceId);
   return { ok: true as const };
@@ -267,7 +267,7 @@ function routeGroup(tx: Tx, groupId: string, spaceId: string): number {
   tx.update(blipGroups).set({ spaceId }).where(eq(blipGroups.id, groupId)).run();
   return tx
     .update(blips)
-    .set({ spaceId, groupId: null, routedBy: null, updatedAt: new Date() })
+    .set({ spaceId, groupId: null, routedBy: null, routedReason: null, updatedAt: new Date() })
     .where(and(eq(blips.groupId, groupId), isNull(blips.spaceId), eq(blips.status, "active")))
     .run().changes;
 }

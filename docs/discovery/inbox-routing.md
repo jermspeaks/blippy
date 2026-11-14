@@ -13,6 +13,7 @@ The feed is an **inbox**: the place to process captured links until each has a h
 - **Save, then triage:** capture saves immediately (no preview step); triage happens in the inbox.
 - **Routing order, first match wins:** (1) kind rule (video link -> video space), (2) the blip's topic group is linked to a space, (3) the AI matched it to an existing space, (4) otherwise it stays in the feed. Implemented in `pickRoute`.
 - **AI space matches apply automatically** (low friction). The AI is given each eligible space's name and description and must copy a name exactly; names it invents are ignored. Only general spaces with auto-intake on are eligible (video routes by rule).
+- **Routing reason + audit log:** each decision gets a reason (AI: one short sentence it returns; rule/group: fixed text) stored on the blip and in the `routing_events` table, viewable at `/routing`. See [routing-command-center.md](routing-command-center.md).
 - **`blips.routed_by` (`rule` | `group` | `ai`)** records how a blip was auto-routed so it isn't invisible; space views show "Auto-sorted by ...". Manual store and return-to-feed clear it.
 - **Group labels don't stick once a group is triaged:** moving a group to a space (or creating a space from it) clears `group_id` on the moved blips. The group row stays linked to the space so future captures with that label route there.
 - **Triage actions ignore the space's auto-intake switch:** the user asked explicitly.

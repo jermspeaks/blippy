@@ -43,6 +43,13 @@
       "when": 1794685047664,
       "tag": "0005_ai_routing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794685301613,
+      "tag": "0006_routing_events",
+      "breakpoints": true
     }
   ]
 }

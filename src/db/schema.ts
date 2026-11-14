@@ -56,10 +56,28 @@ export const blips = sqliteTable("blips", {
   // Stored blips leave the feed and live in a space.
   spaceId: text("space_id").references(() => spaces.id),
   routedBy: text("routed_by", { enum: routedByValues }),
+  // Why the blip was auto-routed (shown with the "Auto-sorted" note); null when stored by hand.
+  routedReason: text("routed_reason"),
   status: text("status", { enum: blipStatuses }).notNull().default("active"),
   nextReviewAt: integer("next_review_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+// Audit log of capture/reprocess routing decisions. Denormalized (no FKs) so
+// entries survive blip or space deletion and renames.
+export const routingEvents = sqliteTable("routing_events", {
+  id: text("id").primaryKey(),
+  blipId: text("blip_id").notNull(),
+  blipTitle: text("blip_title").notNull(),
+  url: text("url"),
+  spaceId: text("space_id"),
+  spaceName: text("space_name"),
+  // null = no route found; the blip stayed in the feed.
+  routedBy: text("routed_by", { enum: routedByValues }),
+  reason: text("reason").notNull(),
+  source: text("source", { enum: ["capture", "reprocess"] }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
 export type Category = typeof categories.$inferSelect;
@@ -68,3 +86,4 @@ export type Space = typeof spaces.$inferSelect;
 export type BlipGroup = typeof blipGroups.$inferSelect;
 export type Blip = typeof blips.$inferSelect;
 export type NewBlip = typeof blips.$inferInsert;
+export type RoutingEvent = typeof routingEvents.$inferSelect;

@@ -1,7 +1,14 @@
 "use server";
 
 import { db } from "@/db";
-import { blips, blipGroups, spaces, type BlipGroup, type Space } from "@/db/schema";
+import {
+  blips,
+  blipGroups,
+  spaces,
+  routingEvents,
+  type BlipGroup,
+  type Space,
+} from "@/db/schema";
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -13,7 +20,7 @@ import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { ensureVideoSpace } from "@/lib/video-space";
-import { pickRoute, aiEligibleSpaces } from "@/lib/routing";
+import { pickRoute, aiEligibleSpaces, inboxReason } from "@/lib/routing";
 
 const MAX_LINKS = 50;
 const FETCH_CONCURRENCY = 6;
@@ -64,6 +71,33 @@ function aiSpaceOptions(allSpaces: Space[]) {
 function aiSpaceId(allSpaces: Space[], name: string | null | undefined): string | null {
   if (!name) return null;
   return aiEligibleSpaces(allSpaces).find((s) => s.name.toLowerCase() === name.toLowerCase())?.id ?? null;
+}
+
+type EventInput = {
+  blipId: string;
+  blipTitle: string;
+  url: string | null;
+  route: ReturnType<typeof pickRoute>;
+  usedAi: boolean;
+  spaceName: (id: string) => string | null;
+  source: "capture" | "reprocess";
+  now: Date;
+};
+
+/** One audit-log row describing a routing decision (including "stayed in the feed"). */
+function routingEvent(e: EventInput) {
+  return {
+    id: randomUUID(),
+    blipId: e.blipId,
+    blipTitle: e.blipTitle,
+    url: e.url,
+    spaceId: e.route?.spaceId ?? null,
+    spaceName: e.route ? e.spaceName(e.route.spaceId) : null,
+    routedBy: e.route?.routedBy ?? null,
+    reason: e.route?.reason ?? inboxReason(e.usedAi),
+    source: e.source,
+    createdAt: e.now,
+  };
 }
 
 type Enriched = { og: LinkMetadata; ai: OrganizedBlip | undefined };
@@ -203,6 +237,13 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
   const videoSpaceId = fresh.some((l) => parseVideoUrl(l.url))
     ? (db.transaction((tx) => ensureVideoSpace(tx))?.id ?? null)
     : null;
+  const videoSpace = videoSpaceId ? allSpaces.find((x) => x.id === videoSpaceId) : null;
+  const names = new Map(allSpaces.map((x) => [x.id, x.name]));
+  if (videoSpaceId && !videoSpace) {
+    const [created] = await db.select().from(spaces).where(eq(spaces.id, videoSpaceId));
+    if (created) names.set(created.id, created.name);
+  }
+  const events: ReturnType<typeof routingEvent>[] = [];
   const rows = fresh.map((link, i) => {
     const { og, ai } = enriched[i];
     const title = ai?.title || fallbackTitle(link, og);
@@ -212,9 +253,24 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
       videoSpaceId: video ? videoSpaceId : null,
       groupSpaceId: groups.spaceFor(groupId),
       aiSpaceId: aiSpaceId(allSpaces, ai?.space),
+      groupLabel: ai?.group,
+      aiReason: ai?.reason,
     });
+    const blipId = randomUUID();
+    events.push(
+      routingEvent({
+        blipId,
+        blipTitle: title,
+        url: link.url,
+        route,
+        usedAi,
+        spaceName: (id) => names.get(id) ?? null,
+        source: "capture",
+        now,
+      })
+    );
     return {
-      id: randomUUID(),
+      id: blipId,
       content: `[${title}](${link.url})`,
       title,
       summary: ai?.summary || og.description?.slice(0, 500) || null,
@@ -224,6 +280,7 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
       groupId,
       spaceId: route?.spaceId ?? null,
       routedBy: route?.routedBy ?? null,
+      routedReason: route?.reason ?? null,
       categoryId: null,
       status: "active" as const,
       nextReviewAt: null,
@@ -235,6 +292,7 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
   db.transaction((tx) => {
     if (groups.pending.length) tx.insert(blipGroups).values(groups.pending).run();
     tx.insert(blips).values(rows).run();
+    tx.insert(routingEvents).values(events).run();
   });
 
   revalidatePath("/");
@@ -304,6 +362,12 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
     const videoSpaceId = chunk.some((b) => parseVideoUrl(b.url))
       ? (db.transaction((tx) => ensureVideoSpace(tx))?.id ?? null)
       : null;
+    const names = new Map(allSpaces.map((x) => [x.id, x.name]));
+    if (videoSpaceId && !names.has(videoSpaceId)) {
+      const [created] = await db.select().from(spaces).where(eq(spaces.id, videoSpaceId));
+      if (created) names.set(created.id, created.name);
+    }
+    const events: ReturnType<typeof routingEvent>[] = [];
     // Resolve groups first so new groups can be inserted before blips reference them.
     const updates = chunk.map((blip, i) => {
       const { og, ai } = enriched[i];
@@ -318,7 +382,23 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
             videoSpaceId: video ? videoSpaceId : null,
             groupSpaceId: groups.spaceFor(groupId),
             aiSpaceId: aiSpaceId(allSpaces, ai?.space),
+            groupLabel: ai?.group,
+            aiReason: ai?.reason,
           });
+      if (!blip.spaceId) {
+        events.push(
+          routingEvent({
+            blipId: blip.id,
+            blipTitle: title,
+            url: blip.url,
+            route,
+            usedAi,
+            spaceName: (id) => names.get(id) ?? null,
+            source: "reprocess",
+            now,
+          })
+        );
+      }
       return {
         id: blip.id,
         set: {
@@ -330,6 +410,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
           groupId,
           spaceId: blip.spaceId ?? route?.spaceId ?? null,
           routedBy: blip.spaceId ? blip.routedBy : (route?.routedBy ?? null),
+          routedReason: blip.spaceId ? blip.routedReason : (route?.reason ?? null),
           updatedAt: now,
         },
       };
@@ -337,6 +418,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
     db.transaction((tx) => {
       if (groups.pending.length) tx.insert(blipGroups).values(groups.pending).run();
       for (const u of updates) tx.update(blips).set(u.set).where(eq(blips.id, u.id)).run();
+      if (events.length) tx.insert(routingEvents).values(events).run();
     });
     updated += chunk.length;
     newGroups += groups.pending.length;

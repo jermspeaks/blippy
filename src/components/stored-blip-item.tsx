@@ -67,7 +67,7 @@ export function StoredBlipItem({
         {blip.summary && <p className="mt-1 text-sm">{blip.summary}</p>}
         <p className="mt-1 text-xs text-muted-foreground">
           {groupLabel ? `${groupLabel} · ` : ""}
-          {routedByNote(blip.routedBy)}
+          <span title={blip.routedReason ?? undefined}>{routedByNote(blip.routedBy)}</span>
           <Link href={`/blips/${blip.id}`} className="underline">
             Open
           </Link>

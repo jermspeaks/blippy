@@ -38,6 +38,18 @@ A list of routing command center to understand how the links will automatically 
 
 We started with youtube, but we need one for Github since there's ways to pull metadata from github to determine why I've saved a project.
 
+### Decisions API
+
+I want to utilize the new decisions API to automate the routing of blips to the appropriate spaces. Let's figure out how to integrate it.
+
+### View snoozed blips
+
+In the spaces I want to see a list of snoozed blips so I can unsnooze them when I'm ready.
+
+### Removing categories
+
+It doesn't appear very useful to see these now we have spaces.
+
 ### Groups management page (`/groups`)
 
 Topic groups are currently only triaged from the feed (create a space, move to a space). A dedicated page could add: rename, merge two groups, link/unlink a space, delete, and move a blip between groups. Not designed yet; revisit once the routing command center ([plan](discovery/routing-command-center.md)) shows how much group cleanup is actually needed.

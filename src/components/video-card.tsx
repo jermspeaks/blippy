@@ -80,7 +80,7 @@ export function VideoCard({
         </Link>
         {blip.summary && <p className="line-clamp-3 text-sm text-muted-foreground">{blip.summary}</p>}
         {(groupLabel || blip.routedBy === "ai") && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground" title={blip.routedReason ?? undefined}>
             {groupLabel}
             {groupLabel && blip.routedBy === "ai" ? " · " : ""}
             {blip.routedBy === "ai" ? routedByNote("ai").replace(/ · $/, "") : ""}

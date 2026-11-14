@@ -6,15 +6,28 @@ describe("pickRoute", () => {
   it("prefers rule, then group, then AI", () => {
     expect(
       pickRoute({ videoSpaceId: "v", groupSpaceId: "g", aiSpaceId: "a" })
-    ).toEqual({ spaceId: "v", routedBy: "rule" });
-    expect(pickRoute({ ...none, groupSpaceId: "g", aiSpaceId: "a" })).toEqual({
+    ).toMatchObject({ spaceId: "v", routedBy: "rule" });
+    expect(
+      pickRoute({ ...none, groupSpaceId: "g", aiSpaceId: "a" })
+    ).toMatchObject({
       spaceId: "g",
       routedBy: "group",
     });
-    expect(pickRoute({ ...none, aiSpaceId: "a" })).toEqual({
+    expect(pickRoute({ ...none, aiSpaceId: "a" })).toMatchObject({
       spaceId: "a",
       routedBy: "ai",
     });
+  });
+  it("explains each route", () => {
+    expect(
+      pickRoute({ ...none, groupSpaceId: "g", groupLabel: "Travel" })?.reason
+    ).toContain("Travel");
+    expect(
+      pickRoute({ ...none, aiSpaceId: "a", aiReason: "About recipes" })?.reason
+    ).toBe("About recipes");
+    expect(pickRoute({ ...none, aiSpaceId: "a" })?.reason).toMatch(
+      /AI matched/
+    );
   });
   it("returns null when nothing matches", () => {
     expect(pickRoute(none)).toBeNull();

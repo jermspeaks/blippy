@@ -1,6 +1,6 @@
 import type { RoutedBy, Space } from "@/db/schema";
 
-export type Route = { spaceId: string; routedBy: RoutedBy } | null;
+export type Route = { spaceId: string; routedBy: RoutedBy; reason: string } | null;
 
 /**
  * Decide where a captured link goes. First match wins:
@@ -13,11 +13,34 @@ export function pickRoute(opts: {
   videoSpaceId: string | null;
   groupSpaceId: string | null;
   aiSpaceId: string | null;
+  groupLabel?: string | null;
+  aiReason?: string | null;
 }): Route {
-  if (opts.videoSpaceId) return { spaceId: opts.videoSpaceId, routedBy: "rule" };
-  if (opts.groupSpaceId) return { spaceId: opts.groupSpaceId, routedBy: "group" };
-  if (opts.aiSpaceId) return { spaceId: opts.aiSpaceId, routedBy: "ai" };
+  if (opts.videoSpaceId) {
+    return { spaceId: opts.videoSpaceId, routedBy: "rule", reason: "Video link (YouTube)" };
+  }
+  if (opts.groupSpaceId) {
+    return {
+      spaceId: opts.groupSpaceId,
+      routedBy: "group",
+      reason: opts.groupLabel
+        ? `Topic group "${opts.groupLabel}" is linked to this space`
+        : "Its topic group is linked to this space",
+    };
+  }
+  if (opts.aiSpaceId) {
+    return {
+      spaceId: opts.aiSpaceId,
+      routedBy: "ai",
+      reason: opts.aiReason || "AI matched the space name and description",
+    };
+  }
   return null;
+}
+
+/** Why a link stayed in the feed. */
+export function inboxReason(aiRan: boolean): string {
+  return aiRan ? "No space matched; left in the feed" : "AI unavailable; left in the feed";
 }
 
 /**

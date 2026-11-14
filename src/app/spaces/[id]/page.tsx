@@ -26,11 +26,11 @@ export default async function SpaceDetailPage({
           ← Spaces
         </Link>
       </p>
-      <h1 className="mb-1 text-2xl font-semibold">{space.name}</h1>
-      {space.description && (
-        <p className="mb-6 text-muted-foreground">{space.description}</p>
-      )}
-      <div className="mb-8 max-w-2xl">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="mb-1 text-2xl font-semibold">{space.name}</h1>
+          {space.description && <p className="text-muted-foreground">{space.description}</p>}
+        </div>
         <SpaceManager
           space={space}
           linkedGroups={linkedGroups}
@@ -42,7 +42,7 @@ export default async function SpaceDetailPage({
       </h2>
       {blips.length === 0 ? (
         <p className="text-muted-foreground">
-          Nothing stored yet. Use Store on a feed card, or link a topic group above.
+          Nothing stored yet. Use Store on a feed card, or link a topic group in Settings.
         </p>
       ) : space.kind === "video" ? (
         <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">

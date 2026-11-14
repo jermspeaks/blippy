@@ -3,8 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2, Unlink } from "lucide-react";
+import { Settings, Trash2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,6 +31,7 @@ type Props = {
 
 export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState(space.name);
   const [description, setDescription] = useState(space.description ?? "");
   const [autoIntake, setAutoIntake] = useState(space.autoIntake);
@@ -30,7 +39,9 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
   const [isPending, startTransition] = useTransition();
 
   function pulledMessage(base: string, pulled: number) {
-    return pulled ? `${base}; stored ${pulled} blip${pulled === 1 ? "" : "s"}` : base;
+    return pulled
+      ? `${base}; stored ${pulled} blip${pulled === 1 ? "" : "s"}`
+      : base;
   }
 
   function handleSave() {
@@ -76,94 +87,124 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
   }
 
   return (
-    <div className="space-y-6 rounded-xl border p-4">
-      <div className="space-y-3">
-        <div className="space-y-1">
-          <Label htmlFor="sp-name">Name</Label>
-          <Input id="sp-name" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="sp-desc">Description</Label>
-          <Input
-            id="sp-desc"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={autoIntake}
-            onChange={(e) => setAutoIntake(e.target.checked)}
-          />
-          Auto-intake from linked topic groups
-        </label>
-        <Button size="sm" onClick={handleSave} disabled={isPending || !name.trim()}>
-          Save
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Settings className="size-4" />
+          Settings
         </Button>
-      </div>
-
-      <div className="space-y-2">
-        <h2 className="text-sm font-medium">Linked topic groups</h2>
-        <p className="text-xs text-muted-foreground">
-          Blips the AI puts in a linked group are stored here on import
-          (when auto-intake is on). A group named like this space links automatically.
-        </p>
-        {linkedGroups.length === 0 ? (
-          <p className="text-sm text-muted-foreground">None linked.</p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {linkedGroups.map((g) => (
-              <li
-                key={g.id}
-                className="flex items-center gap-1 rounded-full border px-3 py-1 text-sm"
-              >
-                {g.label}
-                <button
-                  type="button"
-                  onClick={() => handleUnlink(g.id)}
-                  disabled={isPending}
-                  aria-label={`Unlink ${g.label}`}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Unlink className="size-3" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {availableGroups.length > 0 && (
-          <div className="flex gap-2">
-            <select
-              value={groupToLink}
-              onChange={(e) => setGroupToLink(e.target.value)}
-              aria-label="Group to link"
-              className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit space</DialogTitle>
+          <DialogDescription>
+            Name, intake and linked topic groups.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="sp-name">Name</Label>
+              <Input
+                id="sp-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="sp-desc">Description</Label>
+              <Input
+                id="sp-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={autoIntake}
+                onChange={(e) => setAutoIntake(e.target.checked)}
+              />
+              Auto-intake from linked topic groups
+            </label>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={isPending || !name.trim()}
             >
-              <option value="">Link a topic group…</option>
-              {availableGroups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-            <Button size="sm" variant="outline" onClick={handleLink} disabled={isPending || !groupToLink}>
-              Link
+              Save
             </Button>
           </div>
-        )}
-      </div>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleDelete}
-        disabled={isPending}
-        className="text-destructive hover:text-destructive"
-      >
-        <Trash2 className="size-4" />
-        Delete space
-      </Button>
-    </div>
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium">Linked topic groups</h2>
+            <p className="text-muted-foreground text-xs">
+              Blips the AI puts in a linked group are stored here on import
+              (when auto-intake is on). A group named like this space links
+              automatically.
+            </p>
+            {linkedGroups.length === 0 ? (
+              <p className="text-muted-foreground text-sm">None linked.</p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {linkedGroups.map((g) => (
+                  <li
+                    key={g.id}
+                    className="flex items-center gap-1 rounded-full border px-3 py-1 text-sm"
+                  >
+                    {g.label}
+                    <button
+                      type="button"
+                      onClick={() => handleUnlink(g.id)}
+                      disabled={isPending}
+                      aria-label={`Unlink ${g.label}`}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Unlink className="size-3" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {availableGroups.length > 0 && (
+              <div className="flex gap-2">
+                <select
+                  value={groupToLink}
+                  onChange={(e) => setGroupToLink(e.target.value)}
+                  aria-label="Group to link"
+                  className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                >
+                  <option value="">Link a topic group…</option>
+                  {availableGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleLink}
+                  disabled={isPending || !groupToLink}
+                >
+                  Link
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            disabled={isPending}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="size-4" />
+            Delete space
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

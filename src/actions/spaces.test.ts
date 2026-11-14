@@ -21,6 +21,7 @@ import {
   storeBlip,
   unstoreBlip,
   getSpaceDetail,
+  listSpacesWithCounts,
   routeGroupToSpace,
   createSpaceFromGroup,
 } from "./spaces";
@@ -148,5 +149,18 @@ describe("spaces", () => {
     expect(await get()).toBe(false);
     await updateSpace(s.id, { name: "Switchy", autoIntake: true });
     expect(await get()).toBe(false);
+  });
+
+  it("hides fizzled blips from a space and its count", async () => {
+    const s = await createSpace({ name: "Fizzy", autoIntake: true });
+    if (!s.ok) throw new Error("create failed");
+    await seedBlip("f1", null);
+    await seedBlip("f2", null);
+    await storeBlip("f1", s.id);
+    await storeBlip("f2", s.id);
+    await db.update(blips).set({ status: "fizzled" }).where(eq(blips.id, "f2"));
+    expect((await getSpaceDetail(s.id))!.blips.map((b) => b.id)).toEqual(["f1"]);
+    const row = (await listSpacesWithCounts()).find((x) => x.id === s.id);
+    expect(row?.blipCount).toBe(1);
   });
 });

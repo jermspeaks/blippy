@@ -4,9 +4,11 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ExternalLink, Play, Undo2 } from "lucide-react";
+import { ExternalLink, Play, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { unstoreBlip } from "@/actions/spaces";
+import { setBlipFizzled } from "@/actions/blips";
+import { formatAdded } from "@/lib/space-sort";
 import { parseVideoUrl } from "@/lib/video";
 import type { Blip } from "@/db/schema";
 import { routedByNote } from "@/components/stored-blip-item";
@@ -37,8 +39,17 @@ export function VideoCard({
     });
   }
 
+  function handleFizzle() {
+    startTransition(async () => {
+      const r = await setBlipFizzled(blip.id);
+      if (r.ok) toast.success("Blip fizzled");
+      else toast.error("Failed to fizzle");
+      router.refresh();
+    });
+  }
+
   return (
-    <article className="mb-4 break-inside-avoid overflow-hidden rounded-xl border bg-card">
+    <article className="bg-card mb-4 break-inside-avoid overflow-hidden rounded-xl border">
       {video && (
         <div className={`relative w-full bg-black ${aspect}`}>
           {playing ? (
@@ -75,34 +86,66 @@ export function VideoCard({
         </div>
       )}
       <div className="space-y-1 p-3">
-        <Link href={`/blips/${blip.id}`} className="line-clamp-2 font-medium hover:underline">
+        <Link
+          href={`/blips/${blip.id}`}
+          className="line-clamp-2 font-medium hover:underline"
+        >
           {heading}
         </Link>
-        {blip.summary && <p className="line-clamp-3 text-sm text-muted-foreground">{blip.summary}</p>}
-        {(groupLabel || blip.routedBy === "ai") && (
-          <p className="text-xs text-muted-foreground" title={blip.routedReason ?? undefined}>
-            {groupLabel}
-            {groupLabel && blip.routedBy === "ai" ? " · " : ""}
-            {blip.routedBy === "ai" ? routedByNote("ai").replace(/ · $/, "") : ""}
+        {blip.summary && (
+          <p className="text-muted-foreground line-clamp-3 text-sm">
+            {blip.summary}
           </p>
         )}
-        <div className="flex items-center justify-between pt-1">
+        {(groupLabel || blip.routedBy === "ai") && (
+          <p
+            className="text-muted-foreground text-xs"
+            title={blip.routedReason ?? undefined}
+          >
+            {groupLabel}
+            {groupLabel && blip.routedBy === "ai" ? " · " : ""}
+            {blip.routedBy === "ai"
+              ? routedByNote("ai").replace(/ · $/, "")
+              : ""}
+          </p>
+        )}
+        <p className="text-muted-foreground text-xs" suppressHydrationWarning>
+          Added {formatAdded(blip.createdAt)}
+        </p>
+        <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
           {blip.url && (
             <a
               href={video?.watchUrl ?? blip.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+              className="text-muted-foreground inline-flex items-center gap-1 text-xs hover:underline"
               title="If the video won't play here, the uploader may have disabled embedding"
             >
               <ExternalLink className="size-3" />
               Open on YouTube
             </a>
           )}
-          <Button variant="ghost" size="sm" onClick={handleReturn} disabled={isPending}>
-            <Undo2 className="size-3" />
-            Return to feed
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReturn}
+              disabled={isPending}
+            >
+              <Undo2 className="size-3" />
+              Return to feed
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleFizzle}
+              disabled={isPending}
+              className="text-destructive hover:text-destructive"
+            >
+              <X className="size-3" />
+              Fizzle
+            </Button>
+          </div>
         </div>
       </div>
     </article>

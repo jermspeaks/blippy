@@ -30,8 +30,13 @@ Blips should be able to progress, or die out, along paths that depend on what th
 
 ## Exploratory
 
+### Routing command center
+
 A list of routing command center to understand how the links will automatically filter correctly. This might include the instructions that the AI uses to decide where a link belongs.
 
+### Specialized spaces
+
+We started with youtube, but we need one for Github since there's ways to pull metadata from github to determine why I've saved a project.
 
 ### Groups management page (`/groups`)
 

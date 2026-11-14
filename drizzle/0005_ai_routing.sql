@@ -1,0 +1,1 @@
+ALTER TABLE `spaces` ADD `ai_routing` integer DEFAULT true NOT NULL;

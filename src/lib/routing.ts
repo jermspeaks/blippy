@@ -1,4 +1,4 @@
-import type { RoutedBy } from "@/db/schema";
+import type { RoutedBy, Space } from "@/db/schema";
 
 export type Route = { spaceId: string; routedBy: RoutedBy } | null;
 
@@ -18,4 +18,14 @@ export function pickRoute(opts: {
   if (opts.groupSpaceId) return { spaceId: opts.groupSpaceId, routedBy: "group" };
   if (opts.aiSpaceId) return { spaceId: opts.aiSpaceId, routedBy: "ai" };
   return null;
+}
+
+/**
+ * Spaces the AI may route into: general spaces with auto-intake and AI routing
+ * both on (video routes by rule).
+ */
+export function aiEligibleSpaces<T extends Pick<Space, "autoIntake" | "aiRouting" | "kind">>(
+  allSpaces: T[]
+): T[] {
+  return allSpaces.filter((s) => s.autoIntake && s.aiRouting && s.kind === "general");
 }

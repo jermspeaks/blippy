@@ -21,7 +21,7 @@ The feed is an **inbox**: the place to process captured links until each has a h
 
 ## Open questions
 
-- ~~Per-space AI-routing off switch?~~ Yes; planned as step 1 of the [routing command center](routing-command-center.md).
+- ~~Per-space AI-routing off switch?~~ Yes; built (`spaces.ai_routing`), see the [routing command center](routing-command-center.md).
 - Is the space description enough signal for the AI, or do spaces need examples/keywords?
 
 ## Design
@@ -37,4 +37,4 @@ Capture -> OG fetch -> `organizeLinks` (now also returns `space`) -> `pickRoute`
 ## Follow-ups
 
 - [ ] Capture result panel.
-- [ ] Per-space AI-routing switch (routing command center step 1).
+- [x] Per-space AI-routing switch (routing command center step 1).

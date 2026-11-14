@@ -24,6 +24,8 @@ export const spaces = sqliteTable("spaces", {
   kind: text("kind", { enum: spaceKinds }).notNull().default("general"),
   // When true, blips whose topic group is linked to this space are stored here on import.
   autoIntake: integer("auto_intake", { mode: "boolean" }).notNull().default(true),
+  // When false, the AI never routes new links here (rules and linked groups still do).
+  aiRouting: integer("ai_routing", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 

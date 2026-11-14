@@ -138,4 +138,15 @@ describe("spaces", () => {
     const again = await storeBlip("rd3", s.id);
     expect(again.ok && again.suggestGroup).toBeNull();
   });
+
+  it("persists the AI-routing switch and leaves it alone when omitted", async () => {
+    const s = await createSpace({ name: "Switchy", autoIntake: true });
+    if (!s.ok) throw new Error("create failed");
+    const get = async () => (await getSpaceDetail(s.id))!.space.aiRouting;
+    expect(await get()).toBe(true);
+    await updateSpace(s.id, { name: "Switchy", autoIntake: true, aiRouting: false });
+    expect(await get()).toBe(false);
+    await updateSpace(s.id, { name: "Switchy", autoIntake: true });
+    expect(await get()).toBe(false);
+  });
 });

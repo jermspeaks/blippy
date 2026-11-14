@@ -13,7 +13,7 @@ import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { ensureVideoSpace } from "@/lib/video-space";
-import { pickRoute } from "@/lib/routing";
+import { pickRoute, aiEligibleSpaces } from "@/lib/routing";
 
 const MAX_LINKS = 50;
 const FETCH_CONCURRENCY = 6;
@@ -58,10 +58,6 @@ function fallbackTitle(link: { text: string; url: string }, og: LinkMetadata) {
   }
 }
 
-/** Spaces the AI may route into: general spaces with auto-intake on (video routes by rule). */
-function aiEligibleSpaces(allSpaces: Space[]) {
-  return allSpaces.filter((s) => s.autoIntake && s.kind === "general");
-}
 function aiSpaceOptions(allSpaces: Space[]) {
   return aiEligibleSpaces(allSpaces).map((s) => ({ name: s.name, description: s.description }));
 }

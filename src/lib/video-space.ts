@@ -25,6 +25,7 @@ export function ensureVideoSpace(conn: Conn): Space | null {
     description: "Videos from links you've captured",
     kind: "video",
     autoIntake: true,
+    aiRouting: true,
     createdAt: new Date(),
   };
   conn.insert(spaces).values(space).run();

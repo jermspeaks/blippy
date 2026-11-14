@@ -15,6 +15,7 @@ const spaceSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
   description: z.string().trim().max(500).optional().nullable(),
   autoIntake: z.boolean(),
+  aiRouting: z.boolean().optional(),
   kind: z.enum(spaceKinds).default("general"),
 });
 
@@ -145,7 +146,12 @@ export async function createSpace(input: {
 
 export async function updateSpace(
   id: string,
-  input: { name: string; description?: string | null; autoIntake: boolean }
+  input: {
+    name: string;
+    description?: string | null;
+    autoIntake: boolean;
+    aiRouting?: boolean;
+  }
 ) {
   const parsed = spaceSchema.safeParse(input);
   if (!parsed.success) {
@@ -161,6 +167,7 @@ export async function updateSpace(
         name: parsed.data.name,
         description: parsed.data.description || null,
         autoIntake: parsed.data.autoIntake,
+        ...(parsed.data.aiRouting !== undefined && { aiRouting: parsed.data.aiRouting }),
       })
       .where(eq(spaces.id, id))
       .run();

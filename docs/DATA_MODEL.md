@@ -76,7 +76,7 @@ Additional `app_settings` keys: `ai.instructions` (extra prompt text appended to
 
 ## Spaces
 
-- **spaces:** `id`, `name`, `description`, `kind` (`general` | `video`, default `general`), `auto_intake` (boolean), `created_at`. A `video` space renders a tiled player grid and receives YouTube links automatically; see [discovery/video-space.md](discovery/video-space.md).
+- **spaces:** `id`, `name`, `description`, `kind` (`general` | `video`, default `general`), `auto_intake` (boolean), `ai_routing` (boolean, default true; when false the AI never routes new links here), `created_at`. A `video` space renders a tiled player grid and receives YouTube links automatically; see [discovery/video-space.md](discovery/video-space.md).
 - **blips.space_id** (nullable FK): a stored blip. Blips with a `space_id` are excluded from the feed.
 - **blips.routed_by** (nullable: `rule` | `group` | `ai`): how a blip was auto-routed into its space at capture; null when stored by hand. See [discovery/inbox-routing.md](discovery/inbox-routing.md).
 - **blip_groups.space_id** (nullable FK): links a topic group to at most one space (a space can have many groups).

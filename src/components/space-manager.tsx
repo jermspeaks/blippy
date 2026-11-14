@@ -35,6 +35,7 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
   const [name, setName] = useState(space.name);
   const [description, setDescription] = useState(space.description ?? "");
   const [autoIntake, setAutoIntake] = useState(space.autoIntake);
+  const [aiRouting, setAiRouting] = useState(space.aiRouting);
   const [groupToLink, setGroupToLink] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -46,7 +47,12 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
 
   function handleSave() {
     startTransition(async () => {
-      const r = await updateSpace(space.id, { name, description, autoIntake });
+      const r = await updateSpace(space.id, {
+        name,
+        description,
+        autoIntake,
+        aiRouting,
+      });
       if (r.ok) toast.success(pulledMessage("Saved", r.pulled));
       else toast.error(r.error);
       router.refresh();
@@ -127,6 +133,22 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
               />
               Auto-intake from linked topic groups
             </label>
+            {space.kind === "general" && (
+              <div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={aiRouting}
+                    onChange={(e) => setAiRouting(e.target.checked)}
+                  />
+                  Let the AI route new links here
+                </label>
+                <p className="text-muted-foreground mt-1 pl-6 text-xs">
+                  Uses this space&apos;s name and description. Requires
+                  auto-intake. Linked topic groups still route here when off.
+                </p>
+              </div>
+            )}
             <Button
               size="sm"
               onClick={handleSave}

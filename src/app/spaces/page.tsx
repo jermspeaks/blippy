@@ -38,6 +38,7 @@ export default async function SpacesPage() {
               <TableHead className="text-right">Blips</TableHead>
               <TableHead className="text-right">Groups</TableHead>
               <TableHead>Auto-intake</TableHead>
+              <TableHead>AI routing</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -56,6 +57,9 @@ export default async function SpacesPage() {
                 <TableCell className="text-right tabular-nums">{space.groupCount}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {space.autoIntake ? "On" : "Off"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {space.kind === "general" ? (space.aiRouting ? "On" : "Off") : "n/a"}
                 </TableCell>
               </TableRow>
             ))}

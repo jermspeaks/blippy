@@ -19,5 +19,5 @@ One per feature or notable change. Start from [discovery/_template.md](discovery
 | [Inbox and routing](discovery/inbox-routing.md) | Built (steps 1-2) |
 | [Re-route feed blips](discovery/reroute.md) | Built |
 | [Capture result panel](discovery/capture-result-panel.md) | Designed (plan) |
-| [Routing command center](discovery/routing-command-center.md) | Designed (plan) |
+| [Routing command center](discovery/routing-command-center.md) | Mostly built (domain rules, `/routing` page, audit log); manual-correction logging open |
 | [Lifecycle pathways](discovery/lifecycle-pathways.md) | Exploring (not designed) |

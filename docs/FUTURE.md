@@ -1,5 +1,24 @@
 # Future phases
 
+## Next up (ranked)
+
+Tier 1 is done (routing command center, domain rules, snoozed view, categories removed). Planned next, in order:
+
+**Tier 2: next features**
+
+1. **Snooze presets:** +1 day, +1 week, custom date (today only +1 day). Pairs with the snoozed list.
+2. **GitHub specialized space:** pull stars, README, topics and language to answer "why did I save this?"; follow the [video space](discovery/video-space.md) pattern.
+3. **Feed size cap:** configurable blips per day / max feed size (today a fixed 50).
+
+**Tier 3: needs design first**
+
+4. Groups management page (`/groups`), after the routing log shows how much cleanup is needed.
+5. Moves and maturity, plus [lifecycle pathways](discovery/lifecycle-pathways.md).
+
+**Tier 4: deferred:** auth + Swift/REST API (Phase 4), workflows and agents (Phase 5).
+
+**Ideas not yet scheduled:** undo / "wrong space?" re-route on a blip (and log manual corrections as routing events), feed keyboard shortcuts, bulk actions, global search, duplicate detection on capture (normalized URL), dead-link checks, weekly digest, browser extension or bookmarklet capture, one-way Obsidian export, stats strip.
+
 Phase 1 is implemented. These items are for later work (other agents or you).
 
 ## Phase 2: SRS and snooze
@@ -41,6 +60,8 @@ Looks like there are aliases or other, very closely related topics, that can be 
 ### Specialized spaces
 
 We started with youtube, but we need one for Github since there's ways to pull metadata from github to determine why I've saved a project.
+
+Books: Pinterest style (so make sure we can fetch the book details). Add book metadata like author, genre, summary.
 
 ### Decisions API
 

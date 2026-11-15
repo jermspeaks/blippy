@@ -32,7 +32,7 @@ Example: add a rule `github.com -> Dev Tools`, click **Re-route**, and the 9 Git
 
 ## Later (separate features)
 
-- **Resurface snoozed blips:** snoozed blips need a way to come back into the feed (earlier than their snooze date, or on schedule). Not built.
+- **Resurface snoozed blips:** `/spaces/snoozed` lists them with an Unsnooze action (built); once unsnoozed they are due and re-route can act on them. Scheduled resurfacing is not built.
 - **Re-route snoozed blips:** only after resurfacing exists; re-route runs on blips once they are due again.
 
 ## Follow-ups

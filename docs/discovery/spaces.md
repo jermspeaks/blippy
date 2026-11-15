@@ -12,7 +12,7 @@ Example: an obituary link goes into an "Obituaries" space.
 
 ## Decisions
 
-- **Spaces hook into AI topic groups (`blip_groups`), not user categories:** import only ever produces groups. Assumption to revisit if categories were meant.
+- **Spaces hook into AI topic groups (`blip_groups`), not user categories:** import only ever produces groups. Categories have since been removed entirely.
 - **A group links to at most one space; a space can have many groups** (`blip_groups.space_id`). No join table.
 - **Stored blips leave the feed** (`blips.space_id` set; feed filters `space_id IS NULL`). "Return to feed" clears it.
 - **Auto-intake is a per-space switch.** Linking a group, creating a same-named space, or turning auto-intake on also stores the group's existing unstored blips ("we get all the blips in that group").
@@ -22,8 +22,7 @@ Example: an obituary link goes into an "Obituaries" space.
 
 ## Open questions
 
-- Should a space also accept user categories as an intake key?
-- Should fizzling/snoozing interact with stored blips (currently stored blips are not resurfaced)?
+- Should fizzling/snoozing interact with stored blips (currently stored blips are not resurfaced)? Snoozed feed blips are listed at `/spaces/snoozed` and can be unsnoozed.
 - What does a space *do* beyond holding blips (views, exports, per-space prompts)? Ties into [lifecycle-pathways.md](lifecycle-pathways.md).
 - Moving a stored blip directly between spaces (today: return to feed, then store).
 

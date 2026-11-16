@@ -9,6 +9,7 @@ import { unstoreBlip } from "@/actions/spaces";
 import { setBlipFizzled } from "@/actions/blips";
 import { refreshBook } from "@/actions/books";
 import type { Blip, BookDetails } from "@/db/schema";
+import { EditBookDialog } from "@/components/edit-book-dialog";
 import { routedByNote } from "@/components/stored-blip-item";
 
 export function parseAuthors(raw: string | undefined): string[] {
@@ -117,6 +118,7 @@ export function BookCard({
             </a>
           )}
           <div className="flex gap-1">
+            <EditBookDialog blip={blip} book={book} />
             <Button
               variant="ghost"
               size="sm"

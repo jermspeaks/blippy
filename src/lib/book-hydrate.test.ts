@@ -21,7 +21,7 @@ import { blips, bookDetails, spaces } from "@/db/schema";
 import { lookupByIsbn, lookupByTitle } from "@/lib/book-lookup";
 import { hydratePendingBooks } from "./book-hydrate";
 import { ensureBookSpace, sweepBookBlips } from "./book-space";
-import { addBook, refreshBook } from "@/actions/books";
+import { addBook, refreshBook, updateBook } from "@/actions/books";
 import { convertSpaceToBook } from "@/actions/spaces";
 
 const now = new Date();
@@ -172,5 +172,32 @@ describe("add book and convert", () => {
     expect((await blipOf("cv1")).spaceId).toBe("sp-books");
     expect(await convertSpaceToBook("sp-gen")).toMatchObject({ ok: false });
     expect(await convertSpaceToBook("sp-books")).toMatchObject({ ok: false });
+  });
+});
+
+describe("updateBook", () => {
+  const edit = {
+    title: "Edited",
+    authors: ["A One", "B Two"],
+    coverUrl: "https://example.com/c.jpg",
+    url: null,
+    publisher: "Pub",
+    publishedYear: 2001,
+    pageCount: null,
+    isbn13: null,
+  };
+  it("saves edits to the blip and details, replacing a failed status", async () => {
+    await seed("edit-1", "https://example.com/x");
+    await db.insert(bookDetails).values({ blipId: "edit-1", authors: "[]", lookupStatus: "failed", fetchedAt: now });
+    expect((await updateBook("edit-1", edit)).ok).toBe(true);
+    const b = await blipOf("edit-1");
+    expect(b).toMatchObject({ title: "Edited", imageUrl: "https://example.com/c.jpg", url: null });
+    expect(await detailsOf("edit-1")).toMatchObject({ authors: '["A One","B Two"]', lookupStatus: "ok", publishedYear: 2001 });
+  });
+  it("creates details for a blip without any and rejects non-https links", async () => {
+    await seed("edit-2", null);
+    expect((await updateBook("edit-2", edit)).ok).toBe(true);
+    expect(await detailsOf("edit-2")).toBeTruthy();
+    expect((await updateBook("edit-2", { ...edit, coverUrl: "http://x.com/a.jpg" })).ok).toBe(false);
   });
 });

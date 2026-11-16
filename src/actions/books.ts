@@ -116,3 +116,43 @@ export async function addBook(spaceId: string, candidate: BookInfo) {
   revalidateSpace(spaceId);
   return { ok: true as const, id, title: b.title };
 }
+
+const editSchema = z.object({
+  title: z.string().trim().min(1).max(300),
+  authors: z.array(z.string().trim().min(1).max(200)).max(20),
+  coverUrl: httpsUrl,
+  url: httpsUrl,
+  publisher: z.string().trim().max(200).nullable(),
+  publishedYear: z.number().int().min(0).max(3000).nullable(),
+  pageCount: z.number().int().min(0).max(100000).nullable(),
+  isbn13: z.string().regex(/^\d{13}$/).nullable(),
+});
+export type BookEdit = z.infer<typeof editSchema>;
+
+/** Hand-edit a book's card. Saved details count as a good match, so a failed lookup no longer shows. */
+export async function updateBook(blipId: string, edit: BookEdit) {
+  const [blip] = await db.select().from(blips).where(eq(blips.id, blipId)).limit(1);
+  if (!blip) return { ok: false as const, error: "Blip not found" };
+  const parsed = editSchema.safeParse(edit);
+  if (!parsed.success) return { ok: false as const, error: "Check the fields (links must be https)" };
+  const b = parsed.data;
+  await db
+    .update(blips)
+    .set({ title: b.title, imageUrl: b.coverUrl, url: b.url, updatedAt: new Date() })
+    .where(eq(blips.id, blipId));
+  const details = {
+    isbn13: b.isbn13,
+    authors: JSON.stringify(b.authors),
+    publisher: b.publisher || null,
+    publishedYear: b.publishedYear,
+    pageCount: b.pageCount,
+    lookupStatus: "ok" as const,
+    fetchedAt: new Date(),
+  };
+  await db
+    .insert(bookDetails)
+    .values({ blipId, ...details })
+    .onConflictDoUpdate({ target: bookDetails.blipId, set: details });
+  revalidateSpace(blip.spaceId);
+  return { ok: true as const };
+}

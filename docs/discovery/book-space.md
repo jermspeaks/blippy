@@ -27,6 +27,7 @@ A **book** space shows saved books as a Pinterest-style masonry of cards: **cove
 - **Failed lookups leave the blip as captured** (original title and image) and record `failed`, so they are not retried automatically; the card's refresh button retries. A failed refresh keeps earlier good details.
 - **Reprocess skips blips with book details** (it would overwrite the title and cover with generic page data).
 - **Add by title/ISBN:** "Add book" dialog searches (ISBN or title/author), shows up to 5 candidates with cover, you pick the edition. Duplicates (same ISBN or link) are rejected. The blip URL is `books.google.com/books?vid=ISBN<isbn13>`.
+- **Manual edit:** the pencil on each card opens a dialog to change title, authors, cover link, book link, publisher, year, pages and ISBN (`updateBook`; https links only). Saved edits set status `ok`, so a failed lookup stops showing as failed. Refreshing from the card replaces edits with looked-up data.
 - **Details live in a 1:1 `book_details` table;** cover in `blips.image_url`, title in `blips.title`.
 - **All outbound calls go to fixed API hosts** (Google Books, Open Library); saved page URLs are never fetched for book data.
 
@@ -58,5 +59,6 @@ A **book** space shows saved books as a Pinterest-style masonry of cards: **cove
 - [x] Lookup (Google Books + Open Library) and `book_details`.
 - [x] Masonry `BookCard` view.
 - [x] Add by title/ISBN.
+- [x] Edit a book's details and cover by hand.
 - [ ] Stretch: price (Google `saleInfo` or manual print price), price sort.
 - [ ] Sort by author/year; filter unmatched; bulk move non-books out.

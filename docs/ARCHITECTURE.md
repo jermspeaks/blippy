@@ -46,7 +46,7 @@ flowchart LR
 
 - **Blips:** Core entity; capture, feed, detail, snooze (with a snoozed list at `/spaces/snoozed`), fizzle.
 - **Book space:** book links route to a book space; `book-hydrate` looks up cover/author via Google Books (needs `GOOGLE_BOOKS_API_KEY`) with an Open Library fallback; the space page shows masonry `BookCard`s.
-- **Code space:** repository links (GitHub, GitLab, Bitbucket, Codeberg, SourceHut roots) fall back to a code space when no topic space fits; `repo-hydrate` fills `repo_details` from each host's public API (optional `GITHUB_TOKEN`); the space page shows `RepoCard`s.
+- **Code space:** repository links (GitHub, GitLab, Bitbucket, Codeberg, SourceHut roots) fall back to a code space when no topic space fits; `repo-hydrate` fills `repo_details` from each host's public API (optional `GITHUB_TOKEN`); the space page shows a `RepoTable`.
 - **Routing:** `/routing` shows the routing order, user domain rules, per-space routing state, the AI prompt and the audit log.
 - **Feed:** Resurfacing list (due or null `nextReviewAt`, active status, not stored in a space).
 - **Settings:** Theme (next-themes), profile placeholder (Phase 1).

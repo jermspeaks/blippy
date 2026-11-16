@@ -7,7 +7,7 @@ import { parseSpaceSort, sortBlips, spaceSortLabels } from "@/lib/space-sort";
 import { VideoCard } from "@/components/video-card";
 import { StoredBlipItem } from "@/components/stored-blip-item";
 import { BookCard } from "@/components/book-card";
-import { RepoCard } from "@/components/repo-card";
+import { RepoTable } from "@/components/repo-table";
 import { FetchRepoDetailsButton } from "@/components/fetch-repo-details-button";
 import { AddBookDialog } from "@/components/add-book-dialog";
 import { FetchBookDetailsButton } from "@/components/fetch-book-details-button";
@@ -94,11 +94,7 @@ export default async function SpaceDetailPage({
           ))}
         </div>
       ) : space.kind === "code" ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {blips.map((b) => (
-            <RepoCard key={b.id} blip={b} repo={b.repo} spaceId={space.id} />
-          ))}
-        </div>
+        <RepoTable blips={blips} spaceId={space.id} />
       ) : space.kind === "video" ? (
         <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
           {blips.map((b) => (

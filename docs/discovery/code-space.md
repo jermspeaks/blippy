@@ -2,7 +2,7 @@
 
 - **Status:** Built (v1); README excerpt and manual edit are follow-ups
 - **Date started:** 2026-11-15
-- **Related:** [book-space.md](book-space.md) and [video-space.md](video-space.md) (pattern followed), [inbox-routing.md](inbox-routing.md), [spaces.md](spaces.md), `src/lib/repo.ts`, `src/lib/repo-lookup.ts`, `src/lib/repo-hydrate.ts`, `src/lib/code-space.ts`, `src/components/repo-card.tsx`, `src/actions/repos.ts`, `drizzle/0010_repo_details.sql`, [../FUTURE.md](../FUTURE.md)
+- **Related:** [book-space.md](book-space.md) and [video-space.md](video-space.md) (pattern followed), [inbox-routing.md](inbox-routing.md), [spaces.md](spaces.md), `src/lib/repo.ts`, `src/lib/repo-lookup.ts`, `src/lib/repo-hydrate.ts`, `src/lib/code-space.ts`, `src/components/repo-table.tsx`, `src/actions/repos.ts`, `drizzle/0010_repo_details.sql`, [../FUTURE.md](../FUTURE.md)
 
 ## Goal
 
@@ -17,7 +17,7 @@ A **code** space shows saved code repositories as cards that answer "why did I s
 - **One lookup path ("hydration"):** after a blip lands in a code space (capture, reprocess, re-route, manual store, group move, space creation/conversion/sweep), `hydratePendingRepos` fills blips with no `repo_details` row (25 per call; "Look up N more" does 50). A lookup never fails the operation.
 - **Rate limits and errors are not failures:** 403/429/5xx/network errors are `deferred` (nothing recorded, retried by the next hydration or the card's refresh). A 404 or an API-less host is recorded as `failed` ("No repository details found"). A failed refresh keeps earlier good details.
 - **Blip fields stay yours:** the title, image and link are untouched; the summary is filled from the repo description only if empty. Details live in `repo_details` (1:1, cascade).
-- **Card:** responsive grid (`sm:2 / xl:3` columns) with Open, refresh, return to feed and fizzle. Non-repo blips in the space (for example an AI-routed blog post) render as the same card without details.
+- **Table (not cards):** one dense row per repo: name (links out) + description, language, stars, topics (first 4), license (wide screens), last update, and refresh / return to feed / fizzle. Non-repo blips in the space render as a row without details.
 
 ## Open questions
 
@@ -30,5 +30,5 @@ A **code** space shows saved code repositories as cards that answer "why did I s
 
 - [x] Code kind, `parseRepoUrl`, routing fallback, adoption/conversion.
 - [x] Per-host lookup and `repo_details`.
-- [x] Repo card grid.
+- [x] Repo table (first built as a card grid, then condensed to a table).
 - [ ] README excerpt; manual edit of a card; sort/filter; scheduled refresh.

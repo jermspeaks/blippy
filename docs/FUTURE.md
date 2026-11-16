@@ -63,6 +63,20 @@ Looks like there are aliases or other, very closely related topics, that can be 
 
 Books: Pinterest style (so make sure we can fetch the book details). Add book metadata like author, genre, summary.
 
+### Expandable side nav for spaces
+
+Have the nested space navigation expandable, so users can see all the spaces and their topics.
+
+### Read Later Feature
+
+Some of the articles here are really for read later. They may belong to a space, but essentially I want a reading page where it is distraction-free reading - just the text, images, and media (no ads, no fluff). 
+
+**Planned** (separate from spaces; stored article text; status, scroll position, display settings, highlights; added from feed/spaces or by URL): see [discovery/reading-list.md](discovery/reading-list.md).
+
+### Changlog feature
+
+Add a page on the website (w/in settings probably) to show the changelog.
+
 ### Decisions API
 
 I want to utilize the new decisions API to automate the routing of blips to the appropriate spaces. Let's figure out how to integrate it. Domain rules now cover the deterministic cases, so this only needs to handle what rules miss.

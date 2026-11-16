@@ -106,7 +106,7 @@ export default async function SpacesPage({
                   {space.autoIntake ? "On" : "Off"}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {space.kind === "general"
+                  {space.kind !== "video"
                     ? space.aiRouting
                       ? "On"
                       : "Off"

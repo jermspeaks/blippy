@@ -1,6 +1,6 @@
 # Data model
 
-Tables: `blips`, `blip_groups`, `spaces`, `book_details`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
+Tables: `blips`, `blip_groups`, `spaces`, `book_details`, `repo_details`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
 
 ## Tables
 
@@ -32,11 +32,15 @@ Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider
 
 ### spaces.kind
 
-`general` | `video` | `book`. Specialized kinds change how the space page renders and add deterministic routing (video and book links). A general space can be converted to `book` (one-way); see [discovery/book-space.md](discovery/book-space.md).
+`general` | `video` | `book` | `code`. Specialized kinds change how the space page renders and add deterministic routing (video, book and repository links). A general space can be converted to `book` or `code` (one-way); see [discovery/book-space.md](discovery/book-space.md) and [discovery/code-space.md](discovery/code-space.md).
 
 ### book_details
 
 1:1 with a blip in a book space: `blip_id` (PK, FK -> `blips.id`, cascade delete), `isbn13`, `authors` (JSON array of names), `publisher`, `published_year`, `page_count`, `lookup_status` (`ok` = exact ISBN match, `partial` = matched by title, `failed` = no usable match), `fetched_at`. The cover is `blips.image_url` and the title `blips.title`. No row means "never looked up". Price is not stored (stretch goal).
+
+### repo_details
+
+1:1 with a blip in a code space (migration 0010): `blip_id` (PK, FK -> `blips.id`, cascade delete), `provider` (`github` | `gitlab` | `bitbucket` | `codeberg` | `sourcehut`), `owner`, `name`, `description`, `stars`, `language`, `topics` (JSON array), `license`, `homepage`, `pushed_at`, `archived`, `lookup_status` (`ok` | `failed`), `fetched_at`. No row means "never looked up" (or the host was unavailable and the lookup is deferred). The blip's title, image and link are not changed by a lookup.
 
 ### routing_rules
 
@@ -72,7 +76,7 @@ Additional `app_settings` keys: `ai.instructions` (extra prompt text appended to
 
 ## Spaces
 
-- **spaces:** `id`, `name`, `description`, `kind` (`general` | `video`, default `general`), `auto_intake` (boolean), `ai_routing` (boolean, default true; when false the AI never routes new links here), `created_at`. A `video` space renders a tiled player grid and receives YouTube links automatically; see [discovery/video-space.md](discovery/video-space.md).
+- **spaces:** `id`, `name`, `description`, `kind` (`general` | `video` | `book` | `code`, default `general`), `auto_intake` (boolean), `ai_routing` (boolean, default true; when false the AI never routes new links here), `created_at`. A `video` space renders a tiled player grid and receives YouTube links automatically; see [discovery/video-space.md](discovery/video-space.md).
 - **blips.space_id** (nullable FK): a stored blip. Blips with a `space_id` are excluded from the feed.
 - **blips.routed_by** (nullable: `rule` | `group` | `ai`): how a blip was auto-routed into its space at capture; null when stored by hand. See [discovery/inbox-routing.md](discovery/inbox-routing.md).
 - **blips.routed_reason** (nullable text): why the blip was auto-routed; cleared with `routed_by`.

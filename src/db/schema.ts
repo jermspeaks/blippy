@@ -4,7 +4,7 @@ export const blipStatuses = ["active", "matured", "fizzled"] as const;
 export type BlipStatus = (typeof blipStatuses)[number];
 
 // Specialized spaces render and intake differently. Add new kinds here.
-export const spaceKinds = ["general", "video", "book"] as const;
+export const spaceKinds = ["general", "video", "book", "code"] as const;
 export type SpaceKind = (typeof spaceKinds)[number];
 
 // How a blip was auto-routed into a space at capture (null = stored by hand).
@@ -77,6 +77,31 @@ export const routingEvents = sqliteTable("routing_events", {
 // blips.image_url and the title in blips.title.
 export const bookLookupStatuses = ["ok", "partial", "failed"] as const;
 export type BookLookupStatus = (typeof bookLookupStatuses)[number];
+export const repoProviders = ["github", "gitlab", "bitbucket", "codeberg", "sourcehut"] as const;
+export const repoLookupStatuses = ["ok", "failed"] as const;
+
+// Details for a blip stored in a code space (1:1, cascade-deleted with the blip).
+export const repoDetails = sqliteTable("repo_details", {
+  blipId: text("blip_id")
+    .primaryKey()
+    .references(() => blips.id, { onDelete: "cascade" }),
+  provider: text("provider", { enum: repoProviders }).notNull(),
+  owner: text("owner").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  stars: integer("stars"),
+  language: text("language"),
+  // JSON array of topic names.
+  topics: text("topics").notNull().default("[]"),
+  license: text("license"),
+  homepage: text("homepage"),
+  pushedAt: integer("pushed_at", { mode: "timestamp" }),
+  archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+  // ok = details fetched; failed = repo not found / host has no API (retry from the card).
+  lookupStatus: text("lookup_status", { enum: repoLookupStatuses }).notNull(),
+  fetchedAt: integer("fetched_at", { mode: "timestamp" }).notNull(),
+});
+
 export const bookDetails = sqliteTable("book_details", {
   blipId: text("blip_id")
     .primaryKey()
@@ -110,3 +135,4 @@ export type NewBlip = typeof blips.$inferInsert;
 export type RoutingEvent = typeof routingEvents.$inferSelect;
 export type RoutingRule = typeof routingRules.$inferSelect;
 export type BookDetails = typeof bookDetails.$inferSelect;
+export type RepoDetails = typeof repoDetails.$inferSelect;

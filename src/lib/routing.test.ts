@@ -101,6 +101,22 @@ describe("book space gating", () => {
   });
 });
 
+describe("code routing", () => {
+  const none = { videoSpaceId: null, groupSpaceId: null, aiSpaceId: null };
+  it("a repository link uses the code space only when no group or AI space matched", () => {
+    expect(pickRoute({ ...none, codeSpaceId: "c" })).toMatchObject({
+      spaceId: "c",
+      routedBy: "rule",
+      reason: "Code repository link",
+    });
+    expect(pickRoute({ ...none, codeSpaceId: "c", groupSpaceId: "g" })).toMatchObject({ spaceId: "g" });
+    expect(pickRoute({ ...none, codeSpaceId: "c", aiSpaceId: "a" })).toMatchObject({ spaceId: "a" });
+    expect(pickRoute({ ...none, codeSpaceId: "c", domainRule: { spaceId: "d", pattern: "x.com" } })).toMatchObject({
+      spaceId: "d",
+    });
+  });
+});
+
 describe("domain rules", () => {
   it("a domain rule beats the video rule, group and AI", () => {
     const r = pickRoute({

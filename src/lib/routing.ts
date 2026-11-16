@@ -57,6 +57,7 @@ export type Route = {
  *  1. kind rules (video link -> video space, book link -> book space)
  *  2. its topic group is linked to a space
  *  3. the AI matched it to an existing space
+ *  4. a code repository link falls back to the code space
  * Otherwise it stays in the feed (inbox) for triage.
  */
 export function pickRoute(opts: {
@@ -70,6 +71,8 @@ export function pickRoute(opts: {
    * those only guess; a book is placed by `bookSpaceId` after it is verified.
    */
   bookSpaceIds?: ReadonlySet<string>;
+  /** Fallback for a repository link: used only when no group or AI space matched. */
+  codeSpaceId?: string | null;
   groupSpaceId: string | null;
   aiSpaceId: string | null;
   groupLabel?: string | null;
@@ -110,6 +113,9 @@ export function pickRoute(opts: {
       routedBy: "ai",
       reason: opts.aiReason || "AI matched the space name and description",
     };
+  }
+  if (opts.codeSpaceId) {
+    return { spaceId: opts.codeSpaceId, routedBy: "rule", reason: "Code repository link" };
   }
   return null;
 }

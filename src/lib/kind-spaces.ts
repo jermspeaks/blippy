@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { spaces, type Space } from "@/db/schema";
 import { parseVideoUrl } from "@/lib/video";
 import { parseBookUrl } from "@/lib/book";
+import { parseRepoUrl } from "@/lib/repo";
+import { ensureCodeSpace } from "@/lib/code-space";
 import { ensureVideoSpace } from "@/lib/video-space";
 import { ensureBookSpace } from "@/lib/book-space";
 
@@ -19,6 +21,7 @@ export function resolveKindSpaces(
 ): {
   videoSpaceId: string | null;
   bookSpaceId: string | null;
+  codeSpaceId: string | null;
   spaceById: Map<string, Space>;
   /** Every book-kind space, so guessed routes can be kept out of them. */
   bookSpaceIds: Set<string>;
@@ -30,9 +33,12 @@ export function resolveKindSpaces(
   const book = opts.forceBook || urls.some((u) => parseBookUrl(u))
     ? db.transaction((tx) => ensureBookSpace(tx))
     : null;
-  for (const s of [video, book]) if (s) spaceById.set(s.id, s);
+  const code = urls.some((u) => parseRepoUrl(u))
+    ? db.transaction((tx) => ensureCodeSpace(tx))
+    : null;
+  for (const s of [video, book, code]) if (s) spaceById.set(s.id, s);
   const bookSpaceIds = new Set([...spaceById.values()].filter((s) => s.kind === "book").map((s) => s.id));
-  return { videoSpaceId: video?.id ?? null, bookSpaceId: book?.id ?? null, spaceById, bookSpaceIds };
+  return { videoSpaceId: video?.id ?? null, bookSpaceId: book?.id ?? null, codeSpaceId: code?.id ?? null, spaceById, bookSpaceIds };
 }
 
 /** Re-read a space after a kind change (adoption mutates the row). */

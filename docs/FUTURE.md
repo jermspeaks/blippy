@@ -7,7 +7,7 @@ Tier 1 is done (routing command center, domain rules, snoozed view, categories r
 **Tier 2: next features**
 
 1. **Snooze presets:** +1 day, +1 week, custom date (today only +1 day). Pairs with the snoozed list.
-2. **GitHub specialized space:** pull stars, README, topics and language to answer "why did I save this?"; follow the [video space](discovery/video-space.md) pattern.
+2. ~~**GitHub specialized space**~~ built as the **code space** (stars, topics, language, description; [discovery/code-space.md](discovery/code-space.md)); README excerpt is a follow-up.
 3. **Feed size cap:** configurable blips per day / max feed size (today a fixed 50).
 
 **Tier 3: needs design first**
@@ -59,7 +59,7 @@ Looks like there are aliases or other, very closely related topics, that can be 
 
 ### Specialized spaces
 
-**Books** are built (Pinterest-style cards: cover, title, author; see [discovery/book-space.md](discovery/book-space.md)); price is a stretch goal. We started with youtube, but we still need one for Github since there's ways to pull metadata from github to determine why I've saved a project.
+**Books** are built (Pinterest-style cards: cover, title, author; see [discovery/book-space.md](discovery/book-space.md)); price is a stretch goal. **Code** repositories are built too (GitHub, GitLab, Bitbucket, Codeberg; [discovery/code-space.md](discovery/code-space.md)).
 
 Books: Pinterest style (so make sure we can fetch the book details). Add book metadata like author, genre, summary.
 

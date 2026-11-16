@@ -16,6 +16,8 @@ import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { parseBookUrl } from "@/lib/book";
+import { parseRepoUrl } from "@/lib/repo";
+import { hydratePendingRepos } from "@/lib/repo-hydrate";
 import { resolveKindSpaces } from "@/lib/kind-spaces";
 import { hydratePendingBooks, save as saveBookDetails } from "@/lib/book-hydrate";
 import { confirmAiBooks, AI_BOOK_REASON } from "@/lib/book-ai";
@@ -92,7 +94,7 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
     candidates.map((b) => b.url),
     allSpaces
   );
-  const { videoSpaceId, bookSpaceId } = kind;
+  const { videoSpaceId, bookSpaceId, codeSpaceId } = kind;
   const bookSpaceIds = kind.bookSpaceIds;
   const spaceById = kind.spaceById;
 
@@ -186,6 +188,8 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
         bookSpaceId: confirmed.has(b.id) ? tier2BookSpaceId : null,
         bookReason: AI_BOOK_REASON,
         bookSpaceIds,
+        // A repository link falls back to the code space only after the AI found no better space.
+        codeSpaceId: parseRepoUrl(b.url) ? codeSpaceId : null,
         groupSpaceId: null,
         aiSpaceId: aiSpaceId(allSpaces, ai.get(b.id)?.space),
         aiReason: ai.get(b.id)?.reason,
@@ -231,6 +235,9 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
   }
   if (moves.some((m) => spaceById.get(m.route.spaceId)?.kind === "book")) {
     await hydratePendingBooks();
+  }
+  if (moves.some((m) => spaceById.get(m.route.spaceId)?.kind === "code")) {
+    await hydratePendingRepos();
   }
 
   revalidatePath("/");

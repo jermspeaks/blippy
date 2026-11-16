@@ -23,6 +23,8 @@ import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { parseBookUrl } from "@/lib/book";
+import { parseRepoUrl } from "@/lib/repo";
+import { hydratePendingRepos } from "@/lib/repo-hydrate";
 import { resolveKindSpaces } from "@/lib/kind-spaces";
 import { hydratePendingBooks, save as saveBookDetails } from "@/lib/book-hydrate";
 import { confirmAiBooks, AI_BOOK_REASON } from "@/lib/book-ai";
@@ -218,7 +220,7 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
         matchRule(l.url, rules) || parseVideoUrl(l.url) ? null : (enriched[i].ai?.book ?? null),
     }))
   );
-  const { videoSpaceId, bookSpaceId, bookSpaceIds, spaceById } = resolveKindSpaces(
+  const { videoSpaceId, bookSpaceId, codeSpaceId, bookSpaceIds, spaceById } = resolveKindSpaces(
     fresh.map((l) => l.url),
     allSpaces,
     { forceBook: confirmed.size > 0 }
@@ -236,6 +238,7 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
       bookSpaceId: parseBookUrl(link.url) || confirmed.has(String(i)) ? bookSpaceId : null,
       bookReason: parseBookUrl(link.url) ? undefined : AI_BOOK_REASON,
       bookSpaceIds,
+      codeSpaceId: parseRepoUrl(link.url) ? codeSpaceId : null,
       groupSpaceId: groups.spaceFor(groupId),
       aiSpaceId: aiSpaceId(allSpaces, ai?.space),
       groupLabel: ai?.group,
@@ -286,6 +289,9 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
   // Book blips get their cover/author/etc. now; a failed lookup never fails the capture.
   if (rows.some((r) => r.spaceId && spaceById.get(r.spaceId)?.kind === "book")) {
     await hydratePendingBooks();
+  }
+  if (rows.some((r) => r.spaceId && spaceById.get(r.spaceId)?.kind === "code")) {
+    await hydratePendingRepos();
   }
 
   revalidatePath("/");
@@ -367,7 +373,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
             : (enriched[i].ai?.book ?? null),
       }))
     );
-    const { videoSpaceId, bookSpaceId, bookSpaceIds, spaceById } = resolveKindSpaces(
+    const { videoSpaceId, bookSpaceId, codeSpaceId, bookSpaceIds, spaceById } = resolveKindSpaces(
       chunk.map((b) => b.url),
       allSpaces,
       { forceBook: confirmed.size > 0 }
@@ -390,6 +396,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
             bookSpaceId: parseBookUrl(blip.url) || confirmed.has(String(i)) ? bookSpaceId : null,
             bookReason: parseBookUrl(blip.url) ? undefined : AI_BOOK_REASON,
             bookSpaceIds,
+            codeSpaceId: parseRepoUrl(blip.url) ? codeSpaceId : null,
             groupSpaceId: groups.spaceFor(groupId),
             aiSpaceId: aiSpaceId(allSpaces, ai?.space),
             groupLabel: ai?.group,
@@ -438,6 +445,9 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
     });
     if (updates.some((u) => u.set.spaceId && spaceById.get(u.set.spaceId)?.kind === "book")) {
       await hydratePendingBooks();
+    }
+    if (updates.some((u) => u.set.spaceId && spaceById.get(u.set.spaceId)?.kind === "code")) {
+      await hydratePendingRepos();
     }
     updated += chunk.length;
     newGroups += groups.pending.length;

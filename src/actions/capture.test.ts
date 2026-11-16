@@ -55,13 +55,28 @@ vi.mock("@/lib/book-lookup", async (importOriginal) => ({
   ),
   searchBooks: vi.fn(async () => []),
 }));
+vi.mock("@/lib/repo-lookup", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/repo-lookup")>()),
+  lookupRepo: vi.fn(async () => ({
+    description: "A repo",
+    stars: 3,
+    language: "Rust",
+    topics: [],
+    license: null,
+    homepage: null,
+    pushedAt: null,
+    archived: false,
+  })),
+}));
 vi.mock("@/lib/ai/organize", () => ({
   organizeLinks: vi.fn(
     async (_c: unknown, items: { id: number; url: string }[]) =>
       new Map(
         items.map((i) => [
           i.id,
-          i.url.includes("realnovel") || i.url.includes("ghostnovel")
+          i.url.includes("tripsrepo")
+            ? { title: "Trip planner", summary: "s", group: null, space: "Trips", reason: "Travel tool", book: null }
+            : i.url.includes("realnovel") || i.url.includes("ghostnovel")
             ? {
                 title: "Novel page",
                 summary: "s",
@@ -106,6 +121,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { blips, bookDetails, spaces } from "@/db/schema";
 import { createSpace } from "./spaces";
+import { repoDetails } from "@/db/schema";
 import { importMarkdown } from "./capture";
 import {
   listRoutingEvents,
@@ -279,5 +295,20 @@ describe("capture routing + audit log", () => {
     await importMarkdown("[x](https://example.org/just-a-book-review)");
     const [b] = await db.select().from(blips).where(eq(blips.url, "https://example.org/just-a-book-review"));
     expect(b.spaceId).toBeNull();
+  });
+
+  it("a repo link falls back to the code space, but a matching topic space wins", async () => {
+    await importMarkdown(
+      "[a](https://github.com/o/plainrepo)\n[b](https://github.com/o/tripsrepo)\n[c](https://github.com/o/plainrepo/blob/main/x.md)"
+    );
+    const get = async (u: string) => (await db.select().from(blips).where(eq(blips.url, u)))[0];
+    const [codeSpace] = await db.select().from(spaces).where(eq(spaces.kind, "code"));
+    const [trips] = await db.select().from(spaces).where(eq(spaces.name, "Trips"));
+    const plain = await get("https://github.com/o/plainrepo");
+    expect(plain).toMatchObject({ spaceId: codeSpace.id, routedBy: "rule", routedReason: "Code repository link" });
+    expect((await get("https://github.com/o/tripsrepo")).spaceId).toBe(trips.id);
+    expect((await get("https://github.com/o/plainrepo/blob/main/x.md")).spaceId).toBeNull();
+    const [d] = await db.select().from(repoDetails).where(eq(repoDetails.blipId, plain.id));
+    expect(d).toMatchObject({ owner: "o", name: "plainrepo", stars: 3, lookupStatus: "ok" });
   });
 });

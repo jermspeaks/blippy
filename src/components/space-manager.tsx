@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { BookOpen, Settings, Trash2, Unlink } from "lucide-react";
+import { BookOpen, Code2, Settings, Trash2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
   linkGroupToSpace,
   unlinkGroupFromSpace,
   convertSpaceToBook,
+  convertSpaceToCode,
 } from "@/actions/spaces";
 import type { BlipGroup, Space } from "@/db/schema";
 
@@ -89,6 +90,21 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
     startTransition(async () => {
       const r = await convertSpaceToBook(space.id);
       if (r.ok) toast.success(pulledMessage("Converted to a book space", r.pulled));
+      else toast.error(r.error);
+      router.refresh();
+    });
+  }
+
+  function handleConvertToCode() {
+    if (
+      !window.confirm(
+        `Convert "${space.name}" to a code space? It keeps its blips and groups, shows them as repository cards, and repository links with no better-fitting space route here. This can't be undone.`
+      )
+    )
+      return;
+    startTransition(async () => {
+      const r = await convertSpaceToCode(space.id);
+      if (r.ok) toast.success(pulledMessage("Converted to a code space", r.pulled));
       else toast.error(r.error);
       router.refresh();
     });
@@ -245,6 +261,19 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
               <p className="text-muted-foreground text-xs">
                 Shows blips as book cards (cover, title, author) and routes book
                 links here.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleConvertToCode}
+                disabled={isPending}
+              >
+                <Code2 className="size-4" />
+                Convert to code space
+              </Button>
+              <p className="text-muted-foreground text-xs">
+                Shows blips as repository cards (description, language, stars,
+                topics). Repository links go here when no other space fits.
               </p>
             </div>
           )}

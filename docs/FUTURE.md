@@ -63,6 +63,10 @@ Looks like there are aliases or other, very closely related topics, that can be 
 
 Books: Pinterest style (so make sure we can fetch the book details). Add book metadata like author, genre, summary.
 
+### AI spaces summary
+
+Have the AI generate a summary of each space, so users can quickly see what topics are covered.
+
 ### Expandable side nav for spaces
 
 Have the nested space navigation expandable, so users can see all the spaces and their topics.
@@ -71,7 +75,7 @@ Have the nested space navigation expandable, so users can see all the spaces and
 
 Some of the articles here are really for read later. They may belong to a space, but essentially I want a reading page where it is distraction-free reading - just the text, images, and media (no ads, no fluff). 
 
-**Planned** (separate from spaces; stored article text; status, scroll position, display settings, highlights; added from feed/spaces or by URL): see [discovery/reading-list.md](discovery/reading-list.md).
+**Phases 1-2 built** (separate from spaces; stored article text; status, scroll position, display settings, highlights; added from feed/spaces or by URL): see [discovery/reading-list.md](discovery/reading-list.md).
 
 ### Changlog feature
 

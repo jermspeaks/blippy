@@ -1,6 +1,6 @@
 # Data model
 
-Tables: `blips`, `blip_groups`, `spaces`, `book_details`, `repo_details`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
+Tables: `blips`, `blip_groups`, `spaces`, `book_details`, `repo_details`, `reading_items`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
 
 ## Tables
 
@@ -41,6 +41,10 @@ Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider
 ### repo_details
 
 1:1 with a blip in a code space (migration 0010): `blip_id` (PK, FK -> `blips.id`, cascade delete), `provider` (`github` | `gitlab` | `bitbucket` | `codeberg` | `sourcehut`), `owner`, `name`, `description`, `stars`, `language`, `topics` (JSON array), `license`, `homepage`, `pushed_at`, `archived`, `lookup_status` (`ok` | `failed`), `fetched_at`. No row means "never looked up" (or the host was unavailable and the lookup is deferred). The blip's title, image and link are not changed by a lookup.
+
+### reading_items
+
+A saved readable copy of an article (migration 0011): `id`, `blip_id` (required, unique FK -> `blips.id`, **cascade delete**: deleting a blip purges its saved article; fizzling does not), `url`, `title`, `byline`, `site_name`, `lead_image_url`, `excerpt`, `content_html` (sanitized article HTML; null when extraction failed), `word_count`, `reading_minutes`, `scroll_pct` (0-1, migration 0012; where you stopped reading), `extract_status` (`ok` | `failed`), `extract_error`, `status` (`unread` | `reading` | `read` | `archived`, default `unread`), `added_at`, `read_at`, `fetched_at`. Separate from spaces: a blip can be stored in a space and in the reading list. See [discovery/reading-list.md](discovery/reading-list.md).
 
 ### routing_rules
 

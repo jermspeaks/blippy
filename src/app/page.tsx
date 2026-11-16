@@ -2,6 +2,7 @@ import { getFeedBlips } from "@/actions/blips";
 import { GroupActions } from "@/components/group-actions";
 import { BlipCard } from "@/components/blip-card";
 import { listSpaces } from "@/actions/spaces";
+import { readingItemIdsByBlip } from "@/actions/reading";
 import { countRerouteCandidates } from "@/actions/reroute";
 import { RerouteButton } from "@/components/reroute";
 import { buildFeedSections } from "@/lib/feed-groups";
@@ -14,6 +15,7 @@ export default async function FeedPage() {
   const sections = buildFeedSections(blips);
   const spaces = await listSpaces();
   const rerouteCount = await countRerouteCandidates();
+  const readingIds = await readingItemIdsByBlip(blips.map((b) => b.id));
 
   return (
     <div className="container mx-auto max-w-5xl px-8 py-8">
@@ -41,6 +43,7 @@ export default async function FeedPage() {
                 key={section.blip.id}
                 blip={section.blip}
                 spaces={spaces}
+                readingItemId={readingIds[section.blip.id] ?? null}
               />
             ) : (
               <section
@@ -60,7 +63,12 @@ export default async function FeedPage() {
                 </h2>
                 <div className="flex flex-col gap-2">
                   {section.blips.map((blip) => (
-                    <BlipCard key={blip.id} blip={blip} spaces={spaces} />
+                    <BlipCard
+                      key={blip.id}
+                      blip={blip}
+                      spaces={spaces}
+                      readingItemId={readingIds[blip.id] ?? null}
+                    />
                   ))}
                 </div>
               </section>

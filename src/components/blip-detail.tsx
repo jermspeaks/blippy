@@ -25,8 +25,15 @@ import { CalendarClock, X } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { ReadLaterButton } from "@/components/read-later-button";
 
-export function BlipDetail({ blip }: { blip: Blip }) {
+export function BlipDetail({
+  blip,
+  readingItemId = null,
+}: {
+  blip: Blip;
+  readingItemId?: string | null;
+}) {
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<UpdateBlipInput>({
@@ -123,6 +130,7 @@ export function BlipDetail({ blip }: { blip: Blip }) {
             <CalendarClock className="size-3" />
             Snooze 1 day
           </Button>
+          {blip.url && <ReadLaterButton blipId={blip.id} readingItemId={readingItemId} />}
           <Button
             variant="ghost"
             size="sm"

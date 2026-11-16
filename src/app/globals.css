@@ -126,3 +126,162 @@
     @apply bg-background text-foreground;
   }
 }
+/* Reader view for saved articles (sanitized HTML from src/lib/article.ts).
+   Articles arrive wrapped in nested divs, so spacing is set on the elements themselves. */
+.reader-content {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.reader-content :is(p, ul, ol, dl, blockquote, pre, figure, table, hr, iframe) {
+  margin-block: 0 1.25em;
+}
+.reader-content :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 600;
+  line-height: 1.3;
+  margin-block: 1.75em 0.6em;
+}
+.reader-content :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-top: 0;
+}
+.reader-content h1 {
+  font-size: 1.75em;
+}
+.reader-content h2 {
+  font-size: 1.5em;
+}
+.reader-content h3 {
+  font-size: 1.25em;
+}
+.reader-content a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.reader-content img,
+.reader-content iframe,
+.reader-content video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+.reader-content iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+.reader-content figcaption {
+  color: var(--muted-foreground);
+  font-size: 0.875em;
+  margin-top: 0.5em;
+}
+.reader-content ul,
+.reader-content ol {
+  padding-left: 1.5em;
+}
+.reader-content ul {
+  list-style: disc;
+}
+.reader-content ol {
+  list-style: decimal;
+}
+.reader-content li {
+  margin-block: 0 0.4em;
+}
+.reader-content li :is(ul, ol) {
+  margin-top: 0.4em;
+}
+.reader-content :is(blockquote, li, td, th, figure) > :last-child {
+  margin-bottom: 0;
+}
+.reader-content blockquote {
+  border-left: 3px solid var(--border);
+  color: var(--muted-foreground);
+  padding-left: 1em;
+}
+.reader-content pre {
+  background: var(--muted);
+  border-radius: 0.5rem;
+  font-size: 0.9em;
+  line-height: 1.5;
+  overflow-x: auto;
+  padding: 1em;
+}
+.reader-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.reader-content :not(pre) > code {
+  background: var(--muted);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.3em;
+}
+.reader-content table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.reader-content th,
+.reader-content td {
+  border: 1px solid var(--border);
+  padding: 0.4em 0.7em;
+}
+
+/* Reader display settings (phase 2): size, width and theme are data attributes on .reader-shell. */
+.reader-shell {
+  margin-inline: auto;
+  max-width: 48rem;
+}
+.reader-shell[data-width="narrow"] {
+  max-width: 38rem;
+}
+.reader-shell[data-width="wide"] {
+  max-width: 60rem;
+}
+.reader-shell[data-size="sm"] .reader-content {
+  font-size: 1rem;
+}
+.reader-shell[data-size="lg"] .reader-content {
+  font-size: 1.3rem;
+}
+.reader-shell[data-size="xl"] .reader-content {
+  font-size: 1.5rem;
+}
+.reader-shell[data-theme="light"],
+.reader-shell[data-theme="sepia"],
+.reader-shell[data-theme="dark"] {
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  background: var(--background);
+  color: var(--foreground);
+}
+.reader-shell[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --muted: #f1f1f1;
+  --muted-foreground: #6b6b6b;
+  --border: #e2e2e2;
+  --primary: #1a4fa0;
+  --primary-foreground: #ffffff;
+  --input: #e2e2e2;
+}
+.reader-shell[data-theme="sepia"] {
+  --background: #f4ecd8;
+  --foreground: #433422;
+  --muted: #eadfc4;
+  --muted-foreground: #7a6650;
+  --border: #d8c9a6;
+  --primary: #8a4b14;
+  --primary-foreground: #f4ecd8;
+  --input: #d8c9a6;
+}
+.reader-shell[data-theme="dark"] {
+  --background: #131313;
+  --foreground: #e4e4e4;
+  --muted: #232323;
+  --muted-foreground: #9a9a9a;
+  --border: #333333;
+  --primary: #8ab4f8;
+  --primary-foreground: #131313;
+  --input: #333333;
+}

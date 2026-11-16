@@ -147,3 +147,53 @@ export async function fetchLinkMetadata(rawUrl: string): Promise<LinkMetadata> {
     return EMPTY;
   }
 }
+
+export type FetchedPage = { html: string; url: string };
+
+/**
+ * Fetch a whole page for reading (same public-host guard and redirect re-checks
+ * as link previews, but a larger size and time budget). Throws a short Error on
+ * a blocked address, non-HTML response, HTTP error or timeout.
+ */
+export async function fetchPageHtml(
+  rawUrl: string,
+  opts: { maxBytes?: number; timeoutMs?: number } = {}
+): Promise<FetchedPage> {
+  const maxBytes = opts.maxBytes ?? 3 * 1024 * 1024;
+  const signal = AbortSignal.timeout(opts.timeoutMs ?? 15000);
+  let current = rawUrl;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const url = await assertPublicUrl(current);
+    const res = await fetch(url, {
+      redirect: "manual",
+      signal,
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; BlippyBot/1.0; reading list)",
+        accept: "text/html,application/xhtml+xml",
+      },
+    });
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get("location");
+      if (!loc) throw new Error("Redirect without a location");
+      current = new URL(loc, url).toString();
+      continue;
+    }
+    if (!res.ok) throw new Error(`The page returned HTTP ${res.status}`);
+    if (!(res.headers.get("content-type") ?? "").includes("html")) {
+      throw new Error("The link is not a web page");
+    }
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("Empty response");
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    while (total < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      total += value.length;
+    }
+    reader.cancel().catch(() => {});
+    return { html: Buffer.concat(chunks).toString("utf8"), url: url.toString() };
+  }
+  throw new Error("Too many redirects");
+}

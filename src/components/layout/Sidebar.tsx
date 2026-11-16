@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   PlusCircle,
   Layers,
+  BookMarked,
   Route,
   Settings,
   PanelLeftClose,
@@ -19,6 +20,7 @@ const navItems = [
   { href: "/", label: "Feed", icon: LayoutDashboard },
   { href: "/capture", label: "Capture", icon: PlusCircle },
   { href: "/spaces", label: "Spaces", icon: Layers },
+  { href: "/reading", label: "Reading", icon: BookMarked },
   { href: "/routing", label: "Routing", icon: Route },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

@@ -1,8 +1,8 @@
 # Reading list (read later)
 
-- **Status:** Designed (plan; nothing built)
+- **Status:** Phases 1-2 built (phase 3, highlights and notes, planned)
 - **Date started:** 2026-11-16
-- **Related:** [spaces.md](spaces.md), [ai-link-import.md](ai-link-import.md), [code-space.md](code-space.md) (lookup/hydration pattern), `src/lib/og.ts` (SSRF-guarded fetch to reuse), [../FUTURE.md](../FUTURE.md)
+- **Related:** [spaces.md](spaces.md), [ai-link-import.md](ai-link-import.md), [code-space.md](code-space.md) (lookup/hydration pattern), `src/lib/og.ts` (`fetchPageHtml`, the SSRF-guarded fetch), `src/lib/article.ts`, `src/actions/reading.ts`, `src/app/reading/`, `src/components/reading-table.tsx`, `src/components/read-later-button.tsx`, `drizzle/0011_reading_items.sql`, [../FUTURE.md](../FUTURE.md)
 
 ## Goal
 
@@ -44,7 +44,7 @@ Some saved articles are really "read later". A **reading list**, separate from s
 
 ### Dependencies and risks
 
-- New packages: `@mozilla/readability`, `sanitize-html` (+ types), and **`jsdom` moves from devDependencies to dependencies** (it is only a test dependency today). jsdom may need `serverExternalPackages` in `next.config.ts`; check the Next docs in `node_modules/next/dist/docs/` when building.
+- New packages: `@mozilla/readability`, `sanitize-html` (+ `@types/sanitize-html`, `@types/jsdom`), and **`jsdom` moved from devDependencies to dependencies**. jsdom is already on Next's built-in `serverExternalPackages` list, so no `next.config.ts` change was needed.
 - Fetching article pages is a new outbound call to arbitrary public sites (unlike the code and book spaces, which only call fixed API hosts); the SSRF guard and size/time limits are what keep it safe.
 - Stored articles grow the SQLite file; sanitized HTML is typically tens of KB each, so this is fine for a personal list.
 
@@ -54,9 +54,26 @@ Some saved articles are really "read later". A **reading list**, separate from s
 2. **Phase 2, comfort:** remember scroll position (saved debounced via a server action, restored on open; "reading" status set automatically once you scroll), reader display settings (font size, width, light/dark/sepia).
 3. **Phase 3, highlights and notes:** select text to save a highlight with an optional note; highlights re-applied from the text-quote anchor; a per-article list of highlights.
 
+## Phase 1 notes (as built)
+
+- **Extraction:** `charThreshold` 300 for Readability, then a **100-word minimum**; below that the item is saved as failed ("Too little text found. The page may be paywalled, behind a login, or built with JavaScript."). Checked on a real essay (Paul Graham, about 11,600 words, 51 min) and a Wikipedia article. Localhost and private addresses are blocked.
+- **Sanitizer allowlist** (`sanitizeArticleHtml`): links http/https/mailto, forced `target="_blank" rel="noopener noreferrer"`; images https only (http is upgraded), lazy, `no-referrer`; iframes only YouTube/YouTube-nocookie/Vimeo; code `language-*` classes only. Unit-tested against scripts, handlers, `javascript:` links, data URIs and foreign iframes.
+- **Adding blocks until the page is fetched** (up to 15 s); the button shows "Saving...". A failed extraction is saved as a state with the reason and `Refresh text` retries it; a failed refresh keeps an earlier good copy.
+- **`/reading`:** Unread / Reading / Read / Archived tabs with counts (the default tab is Unread), table of article, time and added date; mark read / back to Unread, archive and delete (confirmation dialog). "Reading" status exists in the schema and tabs but nothing sets it until phase 2 (scroll tracking).
+- **`/reading/[id]`:** the reader (title, byline, site, minutes, Open original, Mark read / Archive / Refresh text / Delete) with `.reader-content` styles in `globals.css`.
+- **"Read later"** appears on feed cards, stored items in general spaces and the blip detail page for blips with a link (not on book, video or code rows); it becomes "In reading list". Sidebar: "Reading" directly below "Spaces".
+- **Deleting a blip purges its reading item** (cascade; tested). Fizzling keeps it. Deleting from the list asks for confirmation and keeps the blip.
+
+## Phase 2 notes (as built)
+
+- **Paragraph spacing fix:** Readability wraps article text in nested divs, so the first reader CSS (spacing on direct children only) left paragraphs touching. Spacing now lives on the elements themselves (`p`, lists, quotes, figures...), with heading margins and tighter last-child rules.
+- **Scroll position:** `reading_items.scroll_pct` (migration 0012, 0-1). `ReaderShell` listens to the scrolling element (the app scrolls inside `<main>`, not the window), saves the position debounced (0.8 s, plus on tab hide and leaving the page; changes under 0.5% are skipped) through `saveReadingProgress`, and restores it on open. Restore retries after layout settles (0, 0.3, 0.9, 2 s) and stops the moment you scroll yourself. Positions are only saved while the article is **unread or reading**; reopening a read or archived article starts at the top and overwrites nothing. Marking an article **Unread** resets progress to 0.
+- **Status:** the first scroll past 2% moves an unread article to **reading** (the Reading tab now fills). Reaching the end does **not** mark it read; finishing stays an explicit button. The `/reading` table has a Progress column (percent, for items in Reading).
+- **Display settings** (the "Display" button on the reader): text size (small, medium, large, extra large), width (narrow, medium, wide) and theme (match app, light, sepia, dark). Stored per browser in `localStorage` (`blippy.reader`); applied as data attributes on `.reader-shell`, with themes overriding the color variables so the header, buttons and article all follow. Settings load after first paint, so the default look can flash briefly.
+
 ## Open questions
 
-- Should a finished article's stored text also expire on a schedule? (Default: no; kept until removed or its blip is deleted.)
+- Stored text does not expire on a schedule (decided: kept until removed or its blip is deleted).
 - Highlights: export to Obsidian/markdown later?
 
 ## Out of scope / later
@@ -65,6 +82,6 @@ Some saved articles are really "read later". A **reading list**, separate from s
 
 ## Follow-ups
 
-- [ ] Phase 1: core reading list.
-- [ ] Phase 2: scroll position and display settings.
+- [x] Phase 1: core reading list (built 2026-11-16; see Phase 1 notes below).
+- [x] Phase 2: scroll position and display settings (built 2026-11-16; see Phase 2 notes below).
 - [ ] Phase 3: highlights and notes.

@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadLaterButton } from "@/components/read-later-button";
 import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -22,10 +23,12 @@ export function StoredBlipItem({
   blip,
   spaceId,
   groupLabel,
+  readingItemId = null,
 }: {
   blip: Blip;
   spaceId: string;
   groupLabel: string | null;
+  readingItemId?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -91,6 +94,9 @@ export function StoredBlipItem({
       </div>
       <div className="flex shrink-0 flex-col items-end justify-between gap-2">
         <div className="flex gap-1">
+          {blip.url && (
+            <ReadLaterButton blipId={blip.id} readingItemId={readingItemId} variant="ghost" />
+          )}
           <Button
             variant="ghost"
             size="sm"

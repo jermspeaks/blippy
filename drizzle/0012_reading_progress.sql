@@ -1,0 +1,1 @@
+ALTER TABLE `reading_items` ADD `scroll_pct` real DEFAULT 0 NOT NULL;

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CalendarClock, X, ExternalLink, Archive } from "lucide-react";
+import { ReadLaterButton } from "@/components/read-later-button";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -25,7 +26,15 @@ function hostOf(url: string): string {
   }
 }
 
-export function BlipCard({ blip, spaces = [] }: { blip: Blip; spaces?: Space[] }) {
+export function BlipCard({
+  blip,
+  spaces = [],
+  readingItemId = null,
+}: {
+  blip: Blip;
+  spaces?: Space[];
+  readingItemId?: string | null;
+}) {
   const [isPending, startTransition] = useTransition();
   const [imageFailed, setImageFailed] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
@@ -142,6 +151,7 @@ export function BlipCard({ blip, spaces = [] }: { blip: Blip; spaces?: Space[] }
             <CalendarClock className="size-3" />
             Snooze
           </Button>
+          {blip.url && <ReadLaterButton blipId={blip.id} readingItemId={readingItemId} />}
           <Button
             variant="outline"
             size="sm"

@@ -7,6 +7,7 @@ import { parseSpaceSort, sortBlips, spaceSortLabels } from "@/lib/space-sort";
 import { VideoCard } from "@/components/video-card";
 import { StoredBlipItem } from "@/components/stored-blip-item";
 import { BookCard } from "@/components/book-card";
+import { readingItemIdsByBlip } from "@/actions/reading";
 import { RepoTable } from "@/components/repo-table";
 import { FetchRepoDetailsButton } from "@/components/fetch-repo-details-button";
 import { AddBookDialog } from "@/components/add-book-dialog";
@@ -28,6 +29,7 @@ export default async function SpaceDetailPage({
   const { space, linkedGroups, availableGroups } = detail;
   const blips = sortBlips(detail.blips, sort);
   // Book blips that were never looked up (no details row).
+  const readingIds = await readingItemIdsByBlip(blips.map((b) => b.id));
   const missingDetails = blips.filter((b) => !b.book).length;
   const missingRepoDetails = blips.filter((b) => b.url && !b.repo).length;
 
@@ -114,6 +116,7 @@ export default async function SpaceDetailPage({
               blip={b}
               spaceId={space.id}
               groupLabel={b.groupLabel}
+              readingItemId={readingIds[b.id] ?? null}
             />
           ))}
         </ul>

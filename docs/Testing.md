@@ -34,6 +34,7 @@ Blippy uses unit tests (Vitest + React Testing Library) and end-to-end tests (Pl
 - Add scenarios for: capture a blip, open blip detail, snooze, unsnooze from `/spaces/snoozed`, fizzle, add a domain rule on `/routing`.
 - Book space tests mock `@/lib/book-lookup` (hydration, add-book, conversion) or inject `fetch` (lookup module); never call Google Books or Open Library in tests.
 - Code space tests mock `@/lib/repo-lookup` (hydration, capture) or inject `fetch` (lookup module); never call GitHub, GitLab or the other hosts in tests.
+- Reading list tests mock `@/lib/article` (`extractArticle`) and `@/actions/capture`; `src/lib/article.test.ts` runs Readability and the sanitizer on inline HTML and never fetches pages.
 - Server-action unit tests (capture, routing rules, reroute, snoozed blips) run against a temp SQLite file migrated from `drizzle/`; see `src/actions/*.test.ts`.
 
 **Adding an E2E test:**

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 
 export const blipStatuses = ["active", "matured", "fizzled"] as const;
 export type BlipStatus = (typeof blipStatuses)[number];
@@ -102,6 +102,37 @@ export const repoDetails = sqliteTable("repo_details", {
   fetchedAt: integer("fetched_at", { mode: "timestamp" }).notNull(),
 });
 
+export const readingStatuses = ["unread", "reading", "read", "archived"] as const;
+export type ReadingStatus = (typeof readingStatuses)[number];
+export const extractStatuses = ["ok", "failed"] as const;
+
+// A saved, readable copy of an article. Separate from spaces; deleted with its blip.
+export const readingItems = sqliteTable("reading_items", {
+  id: text("id").primaryKey(),
+  blipId: text("blip_id")
+    .notNull()
+    .unique()
+    .references(() => blips.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  title: text("title").notNull(),
+  byline: text("byline"),
+  siteName: text("site_name"),
+  leadImageUrl: text("lead_image_url"),
+  excerpt: text("excerpt"),
+  // Sanitized article HTML (see src/lib/article.ts); null when extraction failed.
+  contentHtml: text("content_html"),
+  wordCount: integer("word_count"),
+  readingMinutes: integer("reading_minutes"),
+  // How far down the article you got (0 to 1), restored when you reopen it.
+  scrollPct: real("scroll_pct").notNull().default(0),
+  extractStatus: text("extract_status", { enum: extractStatuses }).notNull(),
+  extractError: text("extract_error"),
+  status: text("status", { enum: readingStatuses }).notNull().default("unread"),
+  addedAt: integer("added_at", { mode: "timestamp" }).notNull(),
+  readAt: integer("read_at", { mode: "timestamp" }),
+  fetchedAt: integer("fetched_at", { mode: "timestamp" }).notNull(),
+});
+
 export const bookDetails = sqliteTable("book_details", {
   blipId: text("blip_id")
     .primaryKey()
@@ -136,3 +167,4 @@ export type RoutingEvent = typeof routingEvents.$inferSelect;
 export type RoutingRule = typeof routingRules.$inferSelect;
 export type BookDetails = typeof bookDetails.$inferSelect;
 export type RepoDetails = typeof repoDetails.$inferSelect;
+export type ReadingItem = typeof readingItems.$inferSelect;

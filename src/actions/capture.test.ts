@@ -22,6 +22,23 @@ vi.mock("@/lib/ai/providers", () => ({
   getApiKey: () => "key",
   providerInfo: { openai: { envKey: "OPENAI_API_KEY" } },
 }));
+vi.mock("@/lib/book-lookup", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/book-lookup")>()),
+  lookupByIsbn: vi.fn(async () => ({
+    title: "Atomic Habits",
+    subtitle: null,
+    authors: ["James Clear"],
+    isbn13: "9780735211292",
+    publisher: "Penguin",
+    publishedYear: 2018,
+    pageCount: 321,
+    description: null,
+    coverUrl: "https://covers.openlibrary.org/b/isbn/9780735211292-L.jpg",
+    infoUrl: null,
+  })),
+  lookupByTitle: vi.fn(async () => null),
+  searchBooks: vi.fn(async () => []),
+}));
 vi.mock("@/lib/ai/organize", () => ({
   organizeLinks: vi.fn(
     async (_c: unknown, items: { id: number; url: string }[]) =>
@@ -59,7 +76,7 @@ vi.mock("@/lib/ai/organize", () => ({
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { blips, spaces } from "@/db/schema";
+import { blips, bookDetails, spaces } from "@/db/schema";
 import { createSpace } from "./spaces";
 import { importMarkdown } from "./capture";
 import {
@@ -196,5 +213,20 @@ describe("capture routing + audit log", () => {
     const [r] = await listRoutingRules();
     await deleteRoutingRule(r.id);
     expect(await listRoutingRules()).toHaveLength(0);
+  });
+
+  it("routes a book link to the book space and fetches its details", async () => {
+    const r = await importMarkdown("[Atomic](https://www.amazon.com/dp/0735211299)");
+    expect(r.ok).toBe(true);
+    const [ev] = (await listRoutingEvents("rule")).filter((e) => e.url === "https://www.amazon.com/dp/0735211299");
+    expect(ev).toMatchObject({ routedBy: "rule", reason: "Book link" });
+    expect(ev.spaceName).toBeTruthy();
+    const [b] = await db.select().from(blips).where(eq(blips.url, "https://www.amazon.com/dp/0735211299"));
+    expect(b).toMatchObject({
+      title: "Atomic Habits",
+      imageUrl: "https://covers.openlibrary.org/b/isbn/9780735211292-L.jpg",
+    });
+    const [d] = await db.select().from(bookDetails).where(eq(bookDetails.blipId, b.id));
+    expect(d).toMatchObject({ lookupStatus: "ok", isbn13: "9780735211292" });
   });
 });

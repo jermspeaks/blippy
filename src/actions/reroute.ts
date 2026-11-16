@@ -15,7 +15,9 @@ import { organizeLinks } from "@/lib/ai/organize";
 import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
-import { ensureVideoSpace } from "@/lib/video-space";
+import { parseBookUrl } from "@/lib/book";
+import { resolveKindSpaces } from "@/lib/kind-spaces";
+import { hydratePendingBooks } from "@/lib/book-hydrate";
 import { pickRoute, matchRule } from "@/lib/routing";
 import { aiSpaceOptions, aiSpaceId, routingEvent } from "@/lib/route-helpers";
 import { endOfToday } from "@/lib/due";
@@ -61,7 +63,8 @@ export type RerouteResult =
 /**
  * Re-evaluate where feed blips should go after spaces or rules changed.
  * Same order as capture (domain rule, video, linked group, AI), but it never
- * rewrites content: no page fetches, no title/summary/group changes. The AI
+ * rewrites content: no page fetches, no title/summary/group changes (apart from
+ * looking up book details for blips that land in a book space). The AI
  * step reuses each blip's stored title and summary. Only blips that move are
  * logged; blips already in a space are never touched.
  */
@@ -83,14 +86,13 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
     db.select().from(blipGroups),
   ]);
   const groupById = new Map(groups.map((g) => [g.id, g]));
-  const spaceById = new Map(allSpaces.map((s) => [s.id, s]));
 
-  let videoSpaceId: string | null = null;
-  if (candidates.some((b) => parseVideoUrl(b.url))) {
-    const video = db.transaction((tx) => ensureVideoSpace(tx));
-    videoSpaceId = video?.id ?? null;
-    if (video) spaceById.set(video.id, video);
-  }
+  const kind = resolveKindSpaces(
+    candidates.map((b) => b.url),
+    allSpaces
+  );
+  const { videoSpaceId, bookSpaceId } = kind;
+  const spaceById = kind.spaceById;
 
   const groupSpaceFor = (b: Blip) => {
     const g = b.groupId ? groupById.get(b.groupId) : null;
@@ -101,6 +103,7 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
     pickRoute({
       domainRule: b.url ? matchRule(b.url, rules) : null,
       videoSpaceId: parseVideoUrl(b.url) ? videoSpaceId : null,
+      bookSpaceId: parseBookUrl(b.url) ? bookSpaceId : null,
       groupSpaceId: groupSpaceFor(b),
       aiSpaceId: null,
       groupLabel: b.groupId ? groupById.get(b.groupId)?.label : null,
@@ -199,6 +202,10 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
         )
         .run();
     });
+  }
+
+  if (moves.some((m) => spaceById.get(m.route.spaceId)?.kind === "book")) {
+    await hydratePendingBooks();
   }
 
   revalidatePath("/");

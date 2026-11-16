@@ -7,11 +7,12 @@ import {
   spaces,
   routingEvents,
   routingRules,
+  bookDetails,
   type BlipGroup,
   type RoutingRule,
   type Space,
 } from "@/db/schema";
-import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -21,7 +22,9 @@ import { organizeLinks, type OrganizedBlip } from "@/lib/ai/organize";
 import { getApiKey, providerInfo } from "@/lib/ai/providers";
 import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
-import { ensureVideoSpace } from "@/lib/video-space";
+import { parseBookUrl } from "@/lib/book";
+import { resolveKindSpaces } from "@/lib/kind-spaces";
+import { hydratePendingBooks } from "@/lib/book-hydrate";
 import { pickRoute, matchRule } from "@/lib/routing";
 import { aiSpaceOptions, aiSpaceId, routingEvent } from "@/lib/route-helpers";
 
@@ -204,16 +207,12 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
 
   const now = new Date();
   const groups = makeGroupResolver(existingGroups, allSpaces, now);
-  // Video links route to the video space regardless of AI topic group.
-  const videoSpaceId = fresh.some((l) => parseVideoUrl(l.url))
-    ? (db.transaction((tx) => ensureVideoSpace(tx))?.id ?? null)
-    : null;
-  const videoSpace = videoSpaceId ? allSpaces.find((x) => x.id === videoSpaceId) : null;
-  const names = new Map(allSpaces.map((x) => [x.id, x.name]));
-  if (videoSpaceId && !videoSpace) {
-    const [created] = await db.select().from(spaces).where(eq(spaces.id, videoSpaceId));
-    if (created) names.set(created.id, created.name);
-  }
+  // Video and book links route to their specialized spaces regardless of AI topic group.
+  const { videoSpaceId, bookSpaceId, spaceById } = resolveKindSpaces(
+    fresh.map((l) => l.url),
+    allSpaces
+  );
+  const names = new Map([...spaceById].map(([id, sp]) => [id, sp.name]));
   const events: ReturnType<typeof routingEvent>[] = [];
   const rows = fresh.map((link, i) => {
     const { og, ai } = enriched[i];
@@ -223,6 +222,7 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
     const route = pickRoute({
       domainRule: matchRule(link.url, rules),
       videoSpaceId: video ? videoSpaceId : null,
+      bookSpaceId: parseBookUrl(link.url) ? bookSpaceId : null,
       groupSpaceId: groups.spaceFor(groupId),
       aiSpaceId: aiSpaceId(allSpaces, ai?.space),
       groupLabel: ai?.group,
@@ -265,6 +265,10 @@ export async function importMarkdown(markdown: string): Promise<ImportResult> {
     tx.insert(blips).values(rows).run();
     tx.insert(routingEvents).values(events).run();
   });
+  // Book blips get their cover/author/etc. now; a failed lookup never fails the capture.
+  if (rows.some((r) => r.spaceId && spaceById.get(r.spaceId)?.kind === "book")) {
+    await hydratePendingBooks();
+  }
 
   revalidatePath("/");
   revalidatePath("/feed");
@@ -289,7 +293,8 @@ export async function countLinkBlips(): Promise<number> {
   const rows = await db
     .select({ id: blips.id })
     .from(blips)
-    .where(and(isNotNull(blips.url), eq(blips.status, "active")));
+    .leftJoin(bookDetails, eq(bookDetails.blipId, blips.id))
+    .where(and(isNotNull(blips.url), eq(blips.status, "active"), isNull(bookDetails.blipId)));
   return rows.length;
 }
 
@@ -304,12 +309,16 @@ const REPROCESS_CAP = 200;
  */
 export async function reprocessLinkBlips(): Promise<ReprocessResult> {
   const warnings: string[] = [];
-  const targets = await db
-    .select()
-    .from(blips)
-    .where(and(isNotNull(blips.url), eq(blips.status, "active")))
-    .orderBy(asc(blips.createdAt))
-    .limit(REPROCESS_CAP);
+  // Blips with book details keep them: reprocess would overwrite the title and cover with page data.
+  const targets = (
+    await db
+      .select({ blip: blips })
+      .from(blips)
+      .leftJoin(bookDetails, eq(bookDetails.blipId, blips.id))
+      .where(and(isNotNull(blips.url), eq(blips.status, "active"), isNull(bookDetails.blipId)))
+      .orderBy(asc(blips.createdAt))
+      .limit(REPROCESS_CAP)
+  ).map((r) => r.blip);
   if (targets.length === 0) return { ok: false, error: "No link blips to reprocess." };
 
   let updated = 0;
@@ -330,14 +339,11 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
 
     const now = new Date();
     const groups = makeGroupResolver(existingGroups, allSpaces, now);
-    const videoSpaceId = chunk.some((b) => parseVideoUrl(b.url))
-      ? (db.transaction((tx) => ensureVideoSpace(tx))?.id ?? null)
-      : null;
-    const names = new Map(allSpaces.map((x) => [x.id, x.name]));
-    if (videoSpaceId && !names.has(videoSpaceId)) {
-      const [created] = await db.select().from(spaces).where(eq(spaces.id, videoSpaceId));
-      if (created) names.set(created.id, created.name);
-    }
+    const { videoSpaceId, bookSpaceId, spaceById } = resolveKindSpaces(
+      chunk.map((b) => b.url),
+      allSpaces
+    );
+    const names = new Map([...spaceById].map(([id, sp]) => [id, sp.name]));
     const events: ReturnType<typeof routingEvent>[] = [];
     // Resolve groups first so new groups can be inserted before blips reference them.
     const updates = chunk.map((blip, i) => {
@@ -352,6 +358,7 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
         : pickRoute({
             domainRule: matchRule(blip.url!, rules),
             videoSpaceId: video ? videoSpaceId : null,
+            bookSpaceId: parseBookUrl(blip.url) ? bookSpaceId : null,
             groupSpaceId: groups.spaceFor(groupId),
             aiSpaceId: aiSpaceId(allSpaces, ai?.space),
             groupLabel: ai?.group,
@@ -392,6 +399,9 @@ export async function reprocessLinkBlips(): Promise<ReprocessResult> {
       for (const u of updates) tx.update(blips).set(u.set).where(eq(blips.id, u.id)).run();
       if (events.length) tx.insert(routingEvents).values(events).run();
     });
+    if (updates.some((u) => u.set.spaceId && spaceById.get(u.set.spaceId)?.kind === "book")) {
+      await hydratePendingBooks();
+    }
     updated += chunk.length;
     newGroups += groups.pending.length;
   }

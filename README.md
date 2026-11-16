@@ -9,6 +9,7 @@ Blip cultivation: capture small sparks of attention (questions, ideas, themes), 
 - **Feed** — Blips due for review (or never scheduled). Open, snooze, store in a space, or fizzle from the card.
 - **Quick capture** — Paste markdown notes; each link becomes a blip.
 - **Blip detail** — View and edit content, snooze, or fizzle.
+- **Books** — A book space shows saved books as cover cards (title, author). Book links route there automatically; add others by title or ISBN. Set `GOOGLE_BOOKS_API_KEY` in `.env.local` for lookups.
 - **Snoozed** — `/spaces/snoozed` lists snoozed blips so you can unsnooze them.
 - **Routing** — Domain rules (e.g. github.com → a space), the AI prompt, and a log of where each link went and why.
 - **Settings** — Theme (Light / Dark / System), profile placeholder for later.

@@ -1,8 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { blips, blipGroups, spaces, spaceKinds, routingRules } from "@/db/schema";
+import { blips, blipGroups, bookDetails, spaces, spaceKinds, routingRules } from "@/db/schema";
 import { sweepVideoBlips } from "@/lib/video-space";
+import { sweepBookBlips } from "@/lib/book-space";
+import { hydratePendingBooks } from "@/lib/book-hydrate";
 import { and, asc, count, eq, inArray, isNull, max, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -18,6 +20,11 @@ const spaceSchema = z.object({
   aiRouting: z.boolean().optional(),
   kind: z.enum(spaceKinds).default("general"),
 });
+
+/** Book spaces fetch cover/author details for blips that just arrived. Never throws. */
+async function hydrateIfBook(kind: string | undefined, spaceId: string) {
+  if (kind === "book") await hydratePendingBooks(25, spaceId);
+}
 
 function revalidateAll(spaceId?: string) {
   revalidatePath("/");
@@ -90,15 +97,16 @@ export async function getSpaceDetail(id: string) {
   const [space] = await db.select().from(spaces).where(eq(spaces.id, id)).limit(1);
   if (!space) return null;
   const rows = await db
-    .select({ blip: blips, groupLabel: blipGroups.label })
+    .select({ blip: blips, groupLabel: blipGroups.label, book: bookDetails })
     .from(blips)
     .leftJoin(blipGroups, eq(blips.groupId, blipGroups.id))
+    .leftJoin(bookDetails, eq(bookDetails.blipId, blips.id))
     .where(and(eq(blips.spaceId, id), ne(blips.status, "fizzled")))
     .orderBy(asc(blips.createdAt));
   const allGroups = await db.select().from(blipGroups).orderBy(asc(blipGroups.label));
   return {
     space,
-    blips: rows.map((r) => ({ ...r.blip, groupLabel: r.groupLabel })),
+    blips: rows.map((r) => ({ ...r.blip, groupLabel: r.groupLabel, book: r.book })),
     linkedGroups: allGroups.filter((g) => g.spaceId === id),
     // Groups not claimed by any space, available to link here.
     availableGroups: allGroups.filter((g) => g.spaceId === null),
@@ -132,6 +140,7 @@ export async function createSpace(input: {
       })
       .run();
     if (parsed.data.kind === "video" && parsed.data.autoIntake) pulled += sweepVideoBlips(tx, id);
+    if (parsed.data.kind === "book" && parsed.data.autoIntake) pulled += sweepBookBlips(tx, id);
     // A topic group with the same name is the obvious home for this space.
     const match = tx
       .select()
@@ -143,6 +152,7 @@ export async function createSpace(input: {
       if (parsed.data.autoIntake) pulled += sweepSpace(tx, id);
     }
   });
+  await hydrateIfBook(parsed.data.kind, id);
   revalidateAll();
   return { ok: true as const, id, pulled };
 }
@@ -178,8 +188,13 @@ export async function updateSpace(
       pulled = sweepSpace(tx, id);
       const kind = tx.select({ kind: spaces.kind }).from(spaces).where(eq(spaces.id, id)).get()?.kind;
       if (kind === "video") pulled += sweepVideoBlips(tx, id);
+      if (kind === "book") pulled += sweepBookBlips(tx, id);
     }
   });
+  await hydrateIfBook(
+    (await db.select({ kind: spaces.kind }).from(spaces).where(eq(spaces.id, id)).limit(1))[0]?.kind,
+    id
+  );
   revalidateAll(id);
   return { ok: true as const, pulled };
 }
@@ -205,6 +220,7 @@ export async function linkGroupToSpace(spaceId: string, groupId: string) {
     tx.update(blipGroups).set({ spaceId }).where(eq(blipGroups.id, groupId)).run();
     if (space.autoIntake) pulled = sweepSpace(tx, spaceId);
   });
+  await hydrateIfBook(space.kind, spaceId);
   revalidateAll(spaceId);
   return { ok: true as const, pulled };
 }
@@ -227,6 +243,7 @@ export async function storeBlip(blipId: string, spaceId: string) {
     .update(blips)
     .set({ spaceId, routedBy: null, routedReason: null, updatedAt: new Date() })
     .where(eq(blips.id, blipId));
+  await hydrateIfBook(space.kind, spaceId);
   revalidateAll(spaceId);
 
   // Learning loop: if the blip's topic group isn't linked to any space yet,
@@ -283,6 +300,7 @@ export async function routeGroupToSpace(groupId: string, spaceId: string) {
   const [group] = await db.select().from(blipGroups).where(eq(blipGroups.id, groupId)).limit(1);
   if (!group) return { ok: false as const, error: "Group not found" };
   const moved = db.transaction((tx) => routeGroup(tx, groupId, spaceId));
+  await hydrateIfBook(space.kind, spaceId);
   revalidateAll(spaceId);
   return { ok: true as const, moved, spaceName: space.name };
 }
@@ -319,8 +337,35 @@ export async function createSpaceFromGroup(
       .run();
     let n = routeGroup(tx, groupId, id);
     if (parsed.data.kind === "video") n += sweepVideoBlips(tx, id);
+    if (parsed.data.kind === "book") n += sweepBookBlips(tx, id);
     return n;
   });
+  await hydrateIfBook(parsed.data.kind, id);
   revalidateAll(id);
   return { ok: true as const, id, moved };
+}
+
+/**
+ * Turn an existing general space into the book space (keeping its name, blips
+ * and linked groups). Book links in the feed are pulled in and every blip here
+ * gets its book details looked up. Only one book space is used for routing.
+ */
+export async function convertSpaceToBook(id: string) {
+  const [space] = await db.select().from(spaces).where(eq(spaces.id, id)).limit(1);
+  if (!space) return { ok: false as const, error: "Space not found" };
+  if (space.kind !== "general") {
+    return { ok: false as const, error: "Only general spaces can be converted" };
+  }
+  const [other] = await db.select().from(spaces).where(eq(spaces.kind, "book")).limit(1);
+  if (other) {
+    return { ok: false as const, error: `"${other.name}" is already the book space` };
+  }
+  let pulled = 0;
+  db.transaction((tx) => {
+    tx.update(spaces).set({ kind: "book" }).where(eq(spaces.id, id)).run();
+    if (space.autoIntake) pulled = sweepBookBlips(tx, id);
+  });
+  await hydratePendingBooks(50, id);
+  revalidateAll(id);
+  return { ok: true as const, pulled };
 }

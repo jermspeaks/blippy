@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Settings, Trash2, Unlink } from "lucide-react";
+import { BookOpen, Settings, Trash2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +20,7 @@ import {
   deleteSpace,
   linkGroupToSpace,
   unlinkGroupFromSpace,
+  convertSpaceToBook,
 } from "@/actions/spaces";
 import type { BlipGroup, Space } from "@/db/schema";
 
@@ -74,6 +75,21 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
     startTransition(async () => {
       await unlinkGroupFromSpace(space.id, groupId);
       toast.success("Group unlinked (stored blips stay here)");
+      router.refresh();
+    });
+  }
+
+  function handleConvert() {
+    if (
+      !window.confirm(
+        `Convert "${space.name}" to a book space? It keeps its blips and groups, shows them as book cards, and book links route here. This can't be undone.`
+      )
+    )
+      return;
+    startTransition(async () => {
+      const r = await convertSpaceToBook(space.id);
+      if (r.ok) toast.success(pulledMessage("Converted to a book space", r.pulled));
+      else toast.error(r.error);
       router.refresh();
     });
   }
@@ -133,7 +149,7 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
               />
               Auto-intake from linked topic groups
             </label>
-            {space.kind === "general" && (
+            {space.kind !== "video" && (
               <div>
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -214,6 +230,24 @@ export function SpaceManager({ space, linkedGroups, availableGroups }: Props) {
               </div>
             )}
           </div>
+
+          {space.kind === "general" && (
+            <div className="space-y-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleConvert}
+                disabled={isPending}
+              >
+                <BookOpen className="size-4" />
+                Convert to book space
+              </Button>
+              <p className="text-muted-foreground text-xs">
+                Shows blips as book cards (cover, title, author) and routes book
+                links here.
+              </p>
+            </div>
+          )}
 
           <Button
             variant="ghost"

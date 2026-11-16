@@ -1,6 +1,6 @@
 # Data model
 
-Tables: `blips`, `blip_groups`, `spaces`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
+Tables: `blips`, `blip_groups`, `spaces`, `book_details`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
 
 ## Tables
 
@@ -29,6 +29,14 @@ Populated by the markdown import on the Capture page; all nullable (null for pla
 ### app_settings
 
 Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider>`. API keys are NOT stored here; they come from env vars.
+
+### spaces.kind
+
+`general` | `video` | `book`. Specialized kinds change how the space page renders and add deterministic routing (video and book links). A general space can be converted to `book` (one-way); see [discovery/book-space.md](discovery/book-space.md).
+
+### book_details
+
+1:1 with a blip in a book space: `blip_id` (PK, FK -> `blips.id`, cascade delete), `isbn13`, `authors` (JSON array of names), `publisher`, `published_year`, `page_count`, `lookup_status` (`ok` = exact ISBN match, `partial` = matched by title, `failed` = no usable match), `fetched_at`. The cover is `blips.image_url` and the title `blips.title`. No row means "never looked up". Price is not stored (stretch goal).
 
 ### routing_rules
 

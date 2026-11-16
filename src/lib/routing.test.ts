@@ -45,7 +45,7 @@ describe("aiEligibleSpaces", () => {
     o: Partial<{
       autoIntake: boolean;
       aiRouting: boolean;
-      kind: "general" | "video";
+      kind: "general" | "video" | "book";
     }> = {}
   ) => ({
     name,
@@ -54,14 +54,27 @@ describe("aiEligibleSpaces", () => {
     kind: "general" as const,
     ...o,
   });
-  it("needs auto-intake, AI routing, and general kind", () => {
+  it("needs auto-intake and AI routing, and excludes video spaces", () => {
     const out = aiEligibleSpaces([
       sp("ok"),
       sp("no-intake", { autoIntake: false }),
       sp("no-ai", { aiRouting: false }),
       sp("video", { kind: "video" }),
+      sp("books", { kind: "book" }),
     ]);
-    expect(out.map((s) => s.name)).toEqual(["ok"]);
+    expect(out.map((s) => s.name)).toEqual(["ok", "books"]);
+  });
+});
+
+describe("book routing", () => {
+  const none = { videoSpaceId: null, groupSpaceId: null, aiSpaceId: null };
+  it("a book link beats group and AI but not a domain rule or video", () => {
+    const base = { ...none, bookSpaceId: "b", groupSpaceId: "g", aiSpaceId: "a" };
+    expect(pickRoute(base)).toMatchObject({ spaceId: "b", routedBy: "rule", reason: "Book link" });
+    expect(pickRoute({ ...base, videoSpaceId: "v" })).toMatchObject({ spaceId: "v" });
+    expect(pickRoute({ ...base, domainRule: { spaceId: "d", pattern: "x.com" } })).toMatchObject({
+      spaceId: "d",
+    });
   });
 });
 

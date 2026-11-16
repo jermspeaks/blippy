@@ -6,6 +6,9 @@ import { SortDialog } from "@/components/sort-dialog";
 import { parseSpaceSort, sortBlips, spaceSortLabels } from "@/lib/space-sort";
 import { VideoCard } from "@/components/video-card";
 import { StoredBlipItem } from "@/components/stored-blip-item";
+import { BookCard } from "@/components/book-card";
+import { AddBookDialog } from "@/components/add-book-dialog";
+import { FetchBookDetailsButton } from "@/components/fetch-book-details-button";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +25,12 @@ export default async function SpaceDetailPage({
   if (!detail) notFound();
   const { space, linkedGroups, availableGroups } = detail;
   const blips = sortBlips(detail.blips, sort);
+  // Book blips that were never looked up (no details row).
+  const missingDetails = blips.filter((b) => !b.book).length;
 
   return (
     <div
-      className={`container mx-auto px-8 py-8 ${space.kind === "video" ? "max-w-7xl" : "max-w-6xl"}`}
+      className={`container mx-auto px-8 py-8 ${space.kind === "general" ? "max-w-6xl" : "max-w-7xl"}`}
     >
       <p className="mb-2 text-sm">
         <Link href="/spaces" className="text-muted-foreground hover:underline">
@@ -40,6 +45,15 @@ export default async function SpaceDetailPage({
           )}
         </div>
         <div className="flex gap-2">
+          {space.kind === "book" && (
+            <>
+              <FetchBookDetailsButton
+                spaceId={space.id}
+                missing={missingDetails}
+              />
+              <AddBookDialog spaceId={space.id} />
+            </>
+          )}
           <SortDialog
             current={sort}
             options={spaceSortLabels}
@@ -61,9 +75,16 @@ export default async function SpaceDetailPage({
       </h2>
       {blips.length === 0 ? (
         <p className="text-muted-foreground">
-          Nothing stored yet. Use Store on a feed card, or link a topic group in
-          Settings.
+          {space.kind === "book"
+            ? "No books yet. Save a book link, or use Add book."
+            : "Nothing stored yet. Use Store on a feed card, or link a topic group in Settings."}
         </p>
+      ) : space.kind === "book" ? (
+        <div className="columns-2 gap-4 md:columns-3 lg:columns-4 xl:columns-5">
+          {blips.map((b) => (
+            <BookCard key={b.id} blip={b} book={b.book} spaceId={space.id} />
+          ))}
+        </div>
       ) : space.kind === "video" ? (
         <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
           {blips.map((b) => (

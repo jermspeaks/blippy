@@ -70,7 +70,7 @@ export default async function RoutingPage({
             mapping.
           </li>
           <li>
-            <strong>Link type</strong>: YouTube links go to the Videos space.
+            <strong>Link type</strong>: YouTube links go to the Videos space; book links (Goodreads, Amazon, Bookshop, Open Library and publisher pages) go to the Books space.
           </li>
           <li>
             <strong>Topic group</strong>: the AI&apos;s topic group is linked to
@@ -120,7 +120,7 @@ export default async function RoutingPage({
                 </TableCell>
                 <TableCell>{s.autoIntake ? "On" : "Off"}</TableCell>
                 <TableCell>
-                  {s.kind !== "general" ? "n/a" : s.aiRouting ? "On" : "Off"}
+                  {s.kind === "video" ? "n/a" : s.aiRouting ? "On" : "Off"}
                 </TableCell>
               </TableRow>
             ))}

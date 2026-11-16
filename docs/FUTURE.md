@@ -59,7 +59,7 @@ Looks like there are aliases or other, very closely related topics, that can be 
 
 ### Specialized spaces
 
-We started with youtube, but we need one for Github since there's ways to pull metadata from github to determine why I've saved a project.
+**Books** are built (Pinterest-style cards: cover, title, author; see [discovery/book-space.md](discovery/book-space.md)); price is a stretch goal. We started with youtube, but we still need one for Github since there's ways to pull metadata from github to determine why I've saved a project.
 
 Books: Pinterest style (so make sure we can fetch the book details). Add book metadata like author, genre, summary.
 

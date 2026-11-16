@@ -45,6 +45,7 @@ flowchart LR
 ## Domains
 
 - **Blips:** Core entity; capture, feed, detail, snooze (with a snoozed list at `/spaces/snoozed`), fizzle.
+- **Book space:** book links route to a book space; `book-hydrate` looks up cover/author via Google Books (needs `GOOGLE_BOOKS_API_KEY`) with an Open Library fallback; the space page shows masonry `BookCard`s.
 - **Routing:** `/routing` shows the routing order, user domain rules, per-space routing state, the AI prompt and the audit log.
 - **Feed:** Resurfacing list (due or null `nextReviewAt`, active status, not stored in a space).
 - **Settings:** Theme (next-themes), profile placeholder (Phase 1).

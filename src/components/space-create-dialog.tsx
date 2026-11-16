@@ -93,6 +93,7 @@ export function SpaceCreateDialog() {
         >
           <option value="general">General</option>
           <option value="video">Video (YouTube links route here automatically)</option>
+          <option value="book">Book (book links route here; cards show cover and author)</option>
         </select>
       </div>
       <label className="flex items-center gap-2 text-sm">

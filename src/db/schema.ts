@@ -4,7 +4,7 @@ export const blipStatuses = ["active", "matured", "fizzled"] as const;
 export type BlipStatus = (typeof blipStatuses)[number];
 
 // Specialized spaces render and intake differently. Add new kinds here.
-export const spaceKinds = ["general", "video"] as const;
+export const spaceKinds = ["general", "video", "book"] as const;
 export type SpaceKind = (typeof spaceKinds)[number];
 
 // How a blip was auto-routed into a space at capture (null = stored by hand).
@@ -73,6 +73,25 @@ export const routingEvents = sqliteTable("routing_events", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
+// Book metadata for blips in a book space (1:1 with blips). The cover lives in
+// blips.image_url and the title in blips.title.
+export const bookLookupStatuses = ["ok", "partial", "failed"] as const;
+export type BookLookupStatus = (typeof bookLookupStatuses)[number];
+export const bookDetails = sqliteTable("book_details", {
+  blipId: text("blip_id")
+    .primaryKey()
+    .references(() => blips.id, { onDelete: "cascade" }),
+  isbn13: text("isbn13"),
+  // JSON array of author names.
+  authors: text("authors").notNull().default("[]"),
+  publisher: text("publisher"),
+  publishedYear: integer("published_year"),
+  pageCount: integer("page_count"),
+  // ok = exact ISBN match; partial = matched by title; failed = no usable match (retry from the card).
+  lookupStatus: text("lookup_status", { enum: bookLookupStatuses }).notNull(),
+  fetchedAt: integer("fetched_at", { mode: "timestamp" }).notNull(),
+});
+
 // User-defined "links from this site go to this space" rules, checked first at capture.
 export const routingRules = sqliteTable("routing_rules", {
   id: text("id").primaryKey(),
@@ -90,3 +109,4 @@ export type Blip = typeof blips.$inferSelect;
 export type NewBlip = typeof blips.$inferInsert;
 export type RoutingEvent = typeof routingEvents.$inferSelect;
 export type RoutingRule = typeof routingRules.$inferSelect;
+export type BookDetails = typeof bookDetails.$inferSelect;

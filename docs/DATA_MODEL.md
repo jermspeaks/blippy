@@ -1,6 +1,6 @@
 # Data model
 
-Tables: `blips`, `blip_groups`, `spaces`, `book_details`, `repo_details`, `reading_items`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
+Tables: `blips`, `blip_groups`, `spaces`, `book_details`, `repo_details`, `reading_items`, `reading_highlights`, `routing_rules`, `routing_events`, `app_settings`. (`categories` was removed in migration 0007; spaces replaced it.) The canonical schema is in `src/db/schema.ts` (Drizzle).
 
 ## Tables
 
@@ -28,7 +28,7 @@ Populated by the markdown import on the Capture page; all nullable (null for pla
 
 ### app_settings
 
-Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider>`. API keys are NOT stored here; they come from env vars.
+Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider>`, and `feed.cap` (how many due blips the feed shows: integer 5 to 200, default 50 when unset). API keys are NOT stored here; they come from env vars.
 
 ### spaces.kind
 
@@ -45,6 +45,10 @@ Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider
 ### reading_items
 
 A saved readable copy of an article (migration 0011): `id`, `blip_id` (required, unique FK -> `blips.id`, **cascade delete**: deleting a blip purges its saved article; fizzling does not), `url`, `title`, `byline`, `site_name`, `lead_image_url`, `excerpt`, `content_html` (sanitized article HTML; null when extraction failed), `word_count`, `reading_minutes`, `scroll_pct` (0-1, migration 0012; where you stopped reading), `extract_status` (`ok` | `failed`), `extract_error`, `status` (`unread` | `reading` | `read` | `archived`, default `unread`), `added_at`, `read_at`, `fetched_at`. Separate from spaces: a blip can be stored in a space and in the reading list. See [discovery/reading-list.md](discovery/reading-list.md).
+
+### reading_highlights
+
+A highlighted passage in a saved article (migration 0013): `id`, `reading_item_id` (FK -> `reading_items.id`, cascade delete), `exact` (the quoted text), `prefix` and `suffix` (up to 32 characters of context either side; together a text-quote anchor, not a DOM position), `note` (nullable), `color` (`yellow` | `green` | `blue` | `pink`), `created_at`.
 
 ### routing_rules
 

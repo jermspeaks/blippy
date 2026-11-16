@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { getReadingItem } from "@/actions/reading";
+import { listHighlights } from "@/actions/highlights";
+import { ReaderArticle } from "@/components/reader-article";
 import { ReaderActions } from "@/components/reader-actions";
 import { ReaderShell } from "@/components/reader-shell";
 
@@ -15,6 +17,7 @@ export default async function ReaderPage({
   const { id } = await params;
   const item = await getReadingItem(id);
   if (!item) notFound();
+  const highlights = await listHighlights(item.id);
 
   const meta = [
     item.siteName,
@@ -60,11 +63,7 @@ export default async function ReaderPage({
           </div>
         </header>
         {item.extractStatus === "ok" && item.contentHtml ? (
-          // Sanitized at save time by sanitizeArticleHtml (src/lib/article.ts).
-          <article
-            className="reader-content"
-            dangerouslySetInnerHTML={{ __html: item.contentHtml }}
-          />
+          <ReaderArticle itemId={item.id} html={item.contentHtml} initialHighlights={highlights} />
         ) : (
           <div className="rounded-lg border p-4">
             <p className="font-medium">The article text wasn&apos;t saved.</p>

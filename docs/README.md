@@ -19,7 +19,8 @@ One per feature or notable change. Start from [discovery/_template.md](discovery
 | [Inbox and routing](discovery/inbox-routing.md) | Built (steps 1-2) |
 | [Book space](discovery/book-space.md) | Built (price is a stretch goal) |
 | [Code space](discovery/code-space.md) | Built (v1) |
-| [Reading list](discovery/reading-list.md) | Phases 1-2 built (highlights and notes planned) |
+| [Reading list](discovery/reading-list.md) | Built (phases 1-3: reader, progress, highlights and notes) |
+| [Snooze presets and feed limit](discovery/snooze-and-feed-limit.md) | Built |
 | [Re-route feed blips](discovery/reroute.md) | Built |
 | [Capture result panel](discovery/capture-result-panel.md) | Designed (plan) |
 | [Routing command center](discovery/routing-command-center.md) | Mostly built (domain rules, `/routing` page, audit log); manual-correction logging open |

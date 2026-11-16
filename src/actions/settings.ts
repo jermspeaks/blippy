@@ -120,3 +120,25 @@ export async function listModels(provider: string) {
     };
   }
 }
+
+/** Feed size limit: how many due blips the feed shows at once. */
+const DEFAULT_FEED_CAP = 50;
+const FEED_CAP_MIN = 5;
+const FEED_CAP_MAX = 200;
+
+export async function getFeedCap(): Promise<number> {
+  const n = Number(await getSetting("feed.cap"));
+  return Number.isInteger(n) && n >= FEED_CAP_MIN && n <= FEED_CAP_MAX ? n : DEFAULT_FEED_CAP;
+}
+
+export async function saveFeedCap(cap: number) {
+  const parsed = z.number().int().min(FEED_CAP_MIN).max(FEED_CAP_MAX).safeParse(cap);
+  if (!parsed.success) {
+    return { ok: false as const, error: `Enter a whole number from ${FEED_CAP_MIN} to ${FEED_CAP_MAX}` };
+  }
+  await setSetting("feed.cap", String(parsed.data));
+  revalidatePath("/settings");
+  revalidatePath("/");
+  revalidatePath("/feed");
+  return { ok: true as const };
+}

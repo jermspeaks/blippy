@@ -10,9 +10,9 @@ import {
 import { eq, and, or, lte, gt, sql, asc, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { endOfToday } from "@/lib/due";
+import { isLaterDay } from "@/lib/snooze";
+import { getFeedCap } from "@/actions/settings";
 import { randomUUID } from "crypto";
-
-const FEED_CAP = 50;
 
 export async function createBlip(formData: FormData) {
   const raw = { content: formData.get("content") as string };
@@ -73,6 +73,9 @@ export async function snoozeBlip(id: string, nextReviewAt: Date) {
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.flatten() };
   }
+  if (!isLaterDay(parsed.data.nextReviewAt)) {
+    return { ok: false as const, error: "Pick a day after today" };
+  }
   await db
     .update(blips)
     .set({
@@ -98,16 +101,28 @@ export async function setBlipFizzled(id: string) {
 }
 
 
-export async function getFeedBlips() {
-  const today = endOfToday();
-
+/** Active, unstored blips that are due today or never snoozed. */
+function dueFeedCondition() {
   const dueOrNull = or(
-    lte(blips.nextReviewAt, today),
+    lte(blips.nextReviewAt, endOfToday()),
     sql`${blips.nextReviewAt} IS NULL`
   );
   // Blips stored in a space leave the feed.
-  const active = and(eq(blips.status, "active"), isNull(blips.spaceId));
-  const conditions = and(active, dueOrNull);
+  return and(eq(blips.status, "active"), isNull(blips.spaceId), dueOrNull);
+}
+
+/** How many blips are due, including any beyond the feed's size limit. */
+export async function countDueBlips() {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(blips)
+    .where(dueFeedCondition());
+  return row?.n ?? 0;
+}
+
+export async function getFeedBlips() {
+  const conditions = dueFeedCondition();
+  const cap = await getFeedCap();
 
   const rows = await db
     .select({ blip: blips, groupLabel: blipGroups.label })
@@ -115,7 +130,7 @@ export async function getFeedBlips() {
     .leftJoin(blipGroups, eq(blips.groupId, blipGroups.id))
     .where(conditions)
     .orderBy(asc(blips.nextReviewAt), asc(blips.createdAt))
-    .limit(FEED_CAP);
+    .limit(cap);
 
   return rows.map((r) => ({ ...r.blip, groupLabel: r.groupLabel }));
 }

@@ -133,6 +133,24 @@ export const readingItems = sqliteTable("reading_items", {
   fetchedAt: integer("fetched_at", { mode: "timestamp" }).notNull(),
 });
 
+export const highlightColors = ["yellow", "green", "blue", "pink"] as const;
+export type HighlightColor = (typeof highlightColors)[number];
+
+// A passage highlighted in a saved article, anchored by its text and surrounding words
+// (not by position), so it can be found again in the same stored text. Deleted with the item.
+export const readingHighlights = sqliteTable("reading_highlights", {
+  id: text("id").primaryKey(),
+  readingItemId: text("reading_item_id")
+    .notNull()
+    .references(() => readingItems.id, { onDelete: "cascade" }),
+  exact: text("exact").notNull(),
+  prefix: text("prefix").notNull().default(""),
+  suffix: text("suffix").notNull().default(""),
+  note: text("note"),
+  color: text("color", { enum: highlightColors }).notNull().default("yellow"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
 export const bookDetails = sqliteTable("book_details", {
   blipId: text("blip_id")
     .primaryKey()
@@ -168,3 +186,4 @@ export type RoutingRule = typeof routingRules.$inferSelect;
 export type BookDetails = typeof bookDetails.$inferSelect;
 export type RepoDetails = typeof repoDetails.$inferSelect;
 export type ReadingItem = typeof readingItems.$inferSelect;
+export type ReadingHighlight = typeof readingHighlights.$inferSelect;

@@ -1,6 +1,6 @@
 # Reading list (read later)
 
-- **Status:** Phases 1-2 built (phase 3, highlights and notes, planned)
+- **Status:** Built (phases 1-3)
 - **Date started:** 2026-11-16
 - **Related:** [spaces.md](spaces.md), [ai-link-import.md](ai-link-import.md), [code-space.md](code-space.md) (lookup/hydration pattern), `src/lib/og.ts` (`fetchPageHtml`, the SSRF-guarded fetch), `src/lib/article.ts`, `src/actions/reading.ts`, `src/app/reading/`, `src/components/reading-table.tsx`, `src/components/read-later-button.tsx`, `drizzle/0011_reading_items.sql`, [../FUTURE.md](../FUTURE.md)
 
@@ -71,10 +71,20 @@ Some saved articles are really "read later". A **reading list**, separate from s
 - **Status:** the first scroll past 2% moves an unread article to **reading** (the Reading tab now fills). Reaching the end does **not** mark it read; finishing stays an explicit button. The `/reading` table has a Progress column (percent, for items in Reading).
 - **Display settings** (the "Display" button on the reader): text size (small, medium, large, extra large), width (narrow, medium, wide) and theme (match app, light, sepia, dark). Stored per browser in `localStorage` (`blippy.reader`); applied as data attributes on `.reader-shell`, with themes overriding the color variables so the header, buttons and article all follow. Settings load after first paint, so the default look can flash briefly.
 
+## Phase 3 notes (as built)
+
+- **Creating:** select text in the article and a small toolbar appears over the selection with four colors (yellow, green, blue, pink) and a **Note** button. A color saves immediately; Note opens a dialog for the note and color. Selections inside an existing highlight don't show the toolbar, so highlights never overlap. Max 2,000 characters per highlight, 2,000 per note.
+- **Anchoring:** `reading_highlights` (migration 0013) stores the quoted text plus up to 32 characters before and after (`src/lib/highlight-anchor.ts`), not a DOM position. On load, `locate` finds the quote in the article text (the context picks the right one when the quote repeats) and `applyMark` wraps it in `<mark data-highlight-id>`, one per text node, skipping whitespace between paragraphs. Highlights spanning several paragraphs or links work.
+- **Editing:** click a highlight to open it (note, color, Delete). Deleting asks a second time ("Delete highlight and its note?" when there is a note). Highlights with a note get a dotted underline.
+- **Highlights list:** the "Highlights (N)" button shows every highlight in reading order with its note; click a quote to scroll to it. A highlight whose passage can't be found is listed with a warning instead of being dropped.
+- **Refresh text caveat:** re-fetching an article replaces its stored text; highlights are re-anchored by their quote, so edits to a highlighted passage can orphan it (shown in the list, deletable).
+- **A bug the component test caught:** React re-sets `innerHTML` on a re-render when the `dangerouslySetInnerHTML` object changes identity, which wiped the marks right after they were applied. The object is now memoized.
+- Highlights are deleted with their article (cascade).
+
 ## Open questions
 
 - Stored text does not expire on a schedule (decided: kept until removed or its blip is deleted).
-- Highlights: export to Obsidian/markdown later?
+- Highlights: export to Obsidian/markdown, or a "copy highlights" button (not built).
 
 ## Out of scope / later
 
@@ -84,4 +94,4 @@ Some saved articles are really "read later". A **reading list**, separate from s
 
 - [x] Phase 1: core reading list (built 2026-11-16; see Phase 1 notes below).
 - [x] Phase 2: scroll position and display settings (built 2026-11-16; see Phase 2 notes below).
-- [ ] Phase 3: highlights and notes.
+- [x] Phase 3: highlights and notes (built 2026-11-16; see Phase 3 notes below).

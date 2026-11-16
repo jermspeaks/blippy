@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { Blip, Space } from "@/db/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { snoozeBlip, setBlipFizzled } from "@/actions/blips";
+import { setBlipFizzled } from "@/actions/blips";
+import { SnoozeMenu } from "@/components/snooze-menu";
 import { storeBlip, routeGroupToSpace } from "@/actions/spaces";
 import {
   Dialog,
@@ -13,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CalendarClock, X, ExternalLink, Archive } from "lucide-react";
+import { X, ExternalLink, Archive } from "lucide-react";
 import { ReadLaterButton } from "@/components/read-later-button";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -40,16 +41,6 @@ export function BlipCard({
   const [storeOpen, setStoreOpen] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState("");
   const selectedSpace = spaces.find((s) => String(s.id) === selectedSpaceId);
-
-  function handleSnooze() {
-    const next = new Date();
-    next.setDate(next.getDate() + 1);
-    startTransition(async () => {
-      const result = await snoozeBlip(blip.id, next);
-      if (result.ok) toast.success("Snoozed until tomorrow");
-      else toast.error("Failed to snooze");
-    });
-  }
 
   function handleFizzle() {
     startTransition(async () => {
@@ -141,16 +132,7 @@ export function BlipCard({
               Open
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSnooze}
-            disabled={isPending}
-            className="inline-flex items-center gap-1"
-          >
-            <CalendarClock className="size-3" />
-            Snooze
-          </Button>
+          <SnoozeMenu blipId={blip.id} />
           {blip.url && <ReadLaterButton blipId={blip.id} readingItemId={readingItemId} />}
           <Button
             variant="outline"

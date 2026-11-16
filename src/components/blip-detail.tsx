@@ -4,7 +4,8 @@ import type { Blip } from "@/db/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateBlipSchema, type UpdateBlipInput } from "@/lib/validations";
-import { updateBlip, snoozeBlip, setBlipFizzled } from "@/actions/blips";
+import { updateBlip, setBlipFizzled } from "@/actions/blips";
+import { SnoozeMenu } from "@/components/snooze-menu";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -21,7 +22,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { CalendarClock, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -55,16 +56,6 @@ export function BlipDetail({
     } else {
       toast.error("Failed to update");
     }
-  }
-
-  function handleSnooze() {
-    const next = new Date();
-    next.setDate(next.getDate() + 1);
-    startTransition(async () => {
-      const result = await snoozeBlip(blip.id, next);
-      if (result.ok) toast.success("Snoozed until tomorrow");
-      else toast.error("Failed to snooze");
-    });
   }
 
   function handleFizzle() {
@@ -120,16 +111,7 @@ export function BlipDetail({
           </Form>
         </CardContent>
         <CardFooter className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSnooze}
-            disabled={isPending}
-            className="inline-flex items-center gap-1"
-          >
-            <CalendarClock className="size-3" />
-            Snooze 1 day
-          </Button>
+          <SnoozeMenu blipId={blip.id} label="Snooze" />
           {blip.url && <ReadLaterButton blipId={blip.id} readingItemId={readingItemId} />}
           <Button
             variant="ghost"

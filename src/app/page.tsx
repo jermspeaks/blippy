@@ -1,4 +1,4 @@
-import { getFeedBlips } from "@/actions/blips";
+import { countDueBlips, getFeedBlips } from "@/actions/blips";
 import { GroupActions } from "@/components/group-actions";
 import { BlipCard } from "@/components/blip-card";
 import { listSpaces } from "@/actions/spaces";
@@ -12,6 +12,7 @@ import { PlusCircle } from "lucide-react";
 
 export default async function FeedPage() {
   const blips = await getFeedBlips();
+  const totalDue = await countDueBlips();
   const sections = buildFeedSections(blips);
   const spaces = await listSpaces();
   const rerouteCount = await countRerouteCandidates();
@@ -31,6 +32,15 @@ export default async function FeedPage() {
           </Button>
         </div>
       </div>
+      {totalDue > blips.length && (
+        <p className="text-muted-foreground mb-3 text-sm">
+          Showing {blips.length} of {totalDue} due.{" "}
+          <Link href="/settings" className="underline">
+            Change the feed limit
+          </Link>
+          .
+        </p>
+      )}
       {blips.length === 0 ? (
         <p className="text-muted-foreground">
           No blips due for review. Add one from Capture or check back later.

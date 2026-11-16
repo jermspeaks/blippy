@@ -285,3 +285,25 @@
   --primary-foreground: #131313;
   --input: #333333;
 }
+
+/* Reader highlights (phase 3): <mark data-highlight-id data-color> added by ReaderArticle. */
+.reader-content mark[data-highlight-id] {
+  --hl: rgba(253, 224, 71, 0.45);
+  background: var(--hl);
+  color: inherit;
+  border-radius: 0.15em;
+  cursor: pointer;
+  padding: 0.05em 0;
+}
+.reader-content mark[data-color="green"] {
+  --hl: rgba(134, 239, 172, 0.45);
+}
+.reader-content mark[data-color="blue"] {
+  --hl: rgba(125, 211, 252, 0.45);
+}
+.reader-content mark[data-color="pink"] {
+  --hl: rgba(249, 168, 212, 0.45);
+}
+.reader-content mark[data-has-note="true"] {
+  border-bottom: 2px dotted currentColor;
+}

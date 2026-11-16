@@ -6,9 +6,9 @@ Tier 1 is done (routing command center, domain rules, snoozed view, categories r
 
 **Tier 2: next features**
 
-1. **Snooze presets:** +1 day, +1 week, custom date (today only +1 day). Pairs with the snoozed list.
+1. ~~**Snooze presets**~~ built: tomorrow, a week, a month, custom date ([discovery/snooze-and-feed-limit.md](discovery/snooze-and-feed-limit.md)).
 2. ~~**GitHub specialized space**~~ built as the **code space** (stars, topics, language, description; [discovery/code-space.md](discovery/code-space.md)); README excerpt is a follow-up.
-3. **Feed size cap:** configurable blips per day / max feed size (today a fixed 50).
+3. ~~**Feed size cap**~~ built as a setting (5 to 200, default 50) with a "showing N of M" note; a per-day quota is not built.
 
 **Tier 3: needs design first**
 
@@ -75,7 +75,7 @@ Have the nested space navigation expandable, so users can see all the spaces and
 
 Some of the articles here are really for read later. They may belong to a space, but essentially I want a reading page where it is distraction-free reading - just the text, images, and media (no ads, no fluff). 
 
-**Phases 1-2 built** (separate from spaces; stored article text; status, scroll position, display settings, highlights; added from feed/spaces or by URL): see [discovery/reading-list.md](discovery/reading-list.md).
+**Phases 1-3 built** (separate from spaces; stored article text; status, scroll position, display settings, highlights; added from feed/spaces or by URL): see [discovery/reading-list.md](discovery/reading-list.md).
 
 ### Changlog feature
 
@@ -87,7 +87,7 @@ I want to utilize the new decisions API to automate the routing of blips to the 
 
 ### View snoozed blips (done)
 
-Snoozed blips are listed at `/spaces/snoozed` (linked from Spaces) with an Unsnooze action. Next: snooze presets (+1 week, custom).
+Snoozed blips are listed at `/spaces/snoozed` (linked from Spaces) with an Unsnooze action. Snooze presets (tomorrow, a week, a month, custom date) are built.
 
 ### Removing categories (done)
 

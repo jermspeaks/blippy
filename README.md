@@ -6,12 +6,12 @@ Blip cultivation: capture small sparks of attention (questions, ideas, themes), 
 
 ## Features
 
-- **Feed** — Blips due for review (or never scheduled). Open, snooze, store in a space, or fizzle from the card.
+- **Feed** — Blips due for review (or never scheduled), up to a limit you set in Settings (default 50). Open, snooze (tomorrow, a week, a month or a date), store in a space, or fizzle from the card.
 - **Quick capture** — Paste markdown notes; each link becomes a blip.
 - **Blip detail** — View and edit content, snooze, or fizzle.
 - **Books** — A book space shows saved books as cover cards (title, author). Book links route there automatically; add others by title or ISBN. Set `GOOGLE_BOOKS_API_KEY` in `.env.local` for lookups.
 - **Code** — A code space shows saved repositories in a table (description, language, stars, topics). Repo links from GitHub, GitLab, Bitbucket and Codeberg land there when no topic space fits. Optional `GITHUB_TOKEN` raises GitHub's rate limit.
-- **Reading** — A reading list, separate from spaces: "Read later" on a blip (or paste a link) saves a clean copy of the article for distraction-free reading at `/reading`, with status, reading time, remembered scroll position and display settings (size, width, theme).
+- **Reading** — A reading list, separate from spaces: "Read later" on a blip (or paste a link) saves a clean copy of the article for distraction-free reading at `/reading`, with status, reading time, remembered scroll position and display settings (size, width, theme), and highlights with notes.
 - **Snoozed** — `/spaces/snoozed` lists snoozed blips so you can unsnooze them.
 - **Routing** — Domain rules (e.g. github.com → a space), the AI prompt, and a log of where each link went and why.
 - **Settings** — Theme (Light / Dark / System), profile placeholder for later.

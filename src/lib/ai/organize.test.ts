@@ -29,7 +29,7 @@ describe("organizeLinks", () => {
       [],
       [{ name: "Books", description: "Things to read" }]
     );
-    expect(out.get(0)).toEqual({ title: "A", summary: "", group: "AI Coding", space: "Books", reason: "Reading material" });
+    expect(out.get(0)).toEqual({ title: "A", summary: "", group: "AI Coding", space: "Books", reason: "Reading material", book: null });
     // A space the model invented is ignored.
     expect(out.get(1)?.space).toBeNull();
     expect(out.get(1)?.reason).toBeNull();

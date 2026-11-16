@@ -191,26 +191,45 @@ async function betterCover(info: BookInfo, f: typeof fetch): Promise<BookInfo> {
   return info;
 }
 
-/** Google first (needs a key), Open Library when there is no key or Google fails/returns nothing. */
+/** Every provider that was tried failed (rate limit, network): "unknown", not "no such book". */
+export class LookupUnavailableError extends Error {
+  constructor() {
+    super("Book lookup unavailable");
+  }
+}
+
+/**
+ * Google first (needs a key), Open Library when there is no key or Google fails/returns nothing.
+ * Throws LookupUnavailableError when nothing was found and a provider errored, so callers
+ * can retry later instead of recording a final "no match".
+ */
 async function search(
-  query: { isbn?: string; q: string },
+  query: { isbn?: string; q: string; plain?: string },
   deps: LookupDeps
 ): Promise<BookInfo[]> {
   const f = deps.fetch ?? fetch;
+  let errored = false;
   const key = deps.googleKey === undefined ? process.env.GOOGLE_BOOKS_API_KEY : deps.googleKey;
   if (key) {
     try {
       const out = await searchGoogle(query.isbn ? `isbn:${query.isbn}` : query.q, key, f);
       if (out.length) return out;
     } catch (err) {
+      errored = true;
       console.error("Google Books lookup failed", err instanceof Error ? err.message : err);
     }
   }
   try {
-    return await searchOpenLibrary(query.isbn ? { isbn: query.isbn } : { q: query.q }, f);
+    const out = await searchOpenLibrary(
+      query.isbn ? { isbn: query.isbn } : { q: query.plain ?? query.q },
+      f
+    );
+    if (out.length === 0 && errored) throw new LookupUnavailableError();
+    return out;
   } catch (err) {
+    if (err instanceof LookupUnavailableError) throw err;
     console.error("Open Library lookup failed", err instanceof Error ? err.message : err);
-    return [];
+    throw new LookupUnavailableError();
   }
 }
 
@@ -219,7 +238,12 @@ export async function searchBooks(text: string, deps: LookupDeps = {}): Promise<
   const q = text.trim();
   if (!q) return [];
   const isbn = toIsbn13(q);
-  const found = await search({ isbn: isbn ?? undefined, q }, deps);
+  let found: BookInfo[];
+  try {
+    found = await search({ isbn: isbn ?? undefined, q }, deps);
+  } catch {
+    return []; // the add box just shows "no results"
+  }
   return Promise.all(found.map((b) => betterCover(b, deps.fetch ?? fetch)));
 }
 
@@ -264,6 +288,38 @@ export async function lookupByTitle(
   for (const book of found) {
     if (accept && !accept(book)) continue;
     const score = titleSimilarity(title, book);
+    if (!best || score > best.score) best = { book, score };
+  }
+  if (!best || best.score < MIN_TITLE_SIMILARITY) return null;
+  return betterCover(best.book, deps.fetch ?? fetch);
+}
+
+const surname = (a: string) =>
+  a.trim().split(/\s+/).pop()?.toLowerCase().replace(/[^\p{L}]/gu, "") ?? "";
+
+/**
+ * Confirm a book the AI named: the best candidate must have a similar title and,
+ * when an author was given, share that author's surname. Null when nothing fits.
+ */
+export async function confirmBook(
+  title: string,
+  author: string | null,
+  deps: LookupDeps = {}
+): Promise<BookInfo | null> {
+  const t = cleanPageTitle(title);
+  if (!t) return null;
+  const found = await search(
+    {
+      q: `intitle:${t}${author ? ` inauthor:${author}` : ""}`,
+      plain: `${t} ${author ?? ""}`.trim(),
+    },
+    deps
+  );
+  const wanted = author ? surname(author) : "";
+  let best: { book: BookInfo; score: number } | null = null;
+  for (const book of found) {
+    if (wanted.length >= 3 && !book.authors.some((a) => surname(a) === wanted)) continue;
+    const score = titleSimilarity(t, book);
     if (!best || score > best.score) best = { book, score };
   }
   if (!best || best.score < MIN_TITLE_SIMILARITY) return null;

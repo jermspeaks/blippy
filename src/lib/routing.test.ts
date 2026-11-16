@@ -78,6 +78,29 @@ describe("book routing", () => {
   });
 });
 
+describe("book space gating", () => {
+  const none = { videoSpaceId: null, groupSpaceId: null, aiSpaceId: null };
+  const books = new Set(["b"]);
+  it("group and AI guesses cannot place a blip in a book space", () => {
+    expect(pickRoute({ ...none, groupSpaceId: "b", bookSpaceIds: books })).toBeNull();
+    expect(pickRoute({ ...none, aiSpaceId: "b", bookSpaceIds: books })).toBeNull();
+    expect(pickRoute({ ...none, groupSpaceId: "b", aiSpaceId: "a", bookSpaceIds: books })).toMatchObject({
+      spaceId: "a",
+    });
+    expect(pickRoute({ ...none, groupSpaceId: "g", aiSpaceId: "b", bookSpaceIds: books })).toMatchObject({
+      spaceId: "g",
+    });
+  });
+  it("a verified book and a user domain rule still reach the book space", () => {
+    expect(
+      pickRoute({ ...none, bookSpaceId: "b", bookReason: "Book (AI + Google Books)", bookSpaceIds: books })
+    ).toMatchObject({ spaceId: "b", reason: "Book (AI + Google Books)" });
+    expect(
+      pickRoute({ ...none, domainRule: { spaceId: "b", pattern: "x.com" }, bookSpaceIds: books })
+    ).toMatchObject({ spaceId: "b" });
+  });
+});
+
 describe("domain rules", () => {
   it("a domain rule beats the video rule, group and AI", () => {
     const r = pickRoute({

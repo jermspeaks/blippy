@@ -19,7 +19,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { blips, bookDetails, spaces } from "@/db/schema";
 import { lookupByIsbn, lookupByTitle } from "@/lib/book-lookup";
-import { hydratePendingBooks } from "./book-hydrate";
+import { hydratePendingBooks, pendingBookBlips } from "./book-hydrate";
 import { ensureBookSpace, sweepBookBlips } from "./book-space";
 import { addBook, refreshBook, updateBook } from "@/actions/books";
 import { convertSpaceToBook } from "@/actions/spaces";
@@ -122,11 +122,24 @@ describe("hydrating book details", () => {
   it("survives a lookup that throws", async () => {
     vi.mocked(lookupByTitle).mockRejectedValue(new Error("network"));
     await seed("h4", "https://example.com/x", { spaceId: "sp-books", title: "Whatever" });
-    await expect(hydratePendingBooks(25, "sp-books")).resolves.toBeDefined();
-    expect((await detailsOf("h4")).lookupStatus).toBe("failed");
+    const counts = await hydratePendingBooks(25, "sp-books");
+    expect(counts.deferred).toBe(1);
+    // Nothing is recorded, so a later run retries it.
+    expect(await detailsOf("h4")).toBeUndefined();
+    expect(pendingBookBlips(25, "sp-books").map((b) => b.id)).toContain("h4");
+  });
+
+  it("a URL that carries an ISBN qualifies without any API match", async () => {
+    vi.mocked(lookupByIsbn).mockResolvedValue(null);
+    await seed("i1", "https://us.macmillan.com/books/9781250178602/x", { spaceId: "sp-books", title: "Macmillan page" });
+    await hydratePendingBooks(25, "sp-books");
+    expect(vi.mocked(lookupByTitle).mock.calls.map((c) => c[0])).not.toContain("Macmillan page");
+    expect(await detailsOf("i1")).toMatchObject({ isbn13: "9781250178602", lookupStatus: "ok" });
+    expect(await blipOf("i1")).toMatchObject({ title: "Macmillan page", spaceId: "sp-books" });
   });
 
   it("does not look up the same blip twice, and refresh retries and replaces", async () => {
+    await db.insert(bookDetails).values({ blipId: "h4", authors: "[]", lookupStatus: "failed", fetchedAt: now });
     vi.mocked(lookupByTitle).mockResolvedValue(null);
     await hydratePendingBooks(25, "sp-books");
     expect(lookupByTitle).not.toHaveBeenCalled();

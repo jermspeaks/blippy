@@ -17,7 +17,8 @@ import { getAiConfig } from "@/actions/settings";
 import { parseVideoUrl } from "@/lib/video";
 import { parseBookUrl } from "@/lib/book";
 import { resolveKindSpaces } from "@/lib/kind-spaces";
-import { hydratePendingBooks } from "@/lib/book-hydrate";
+import { hydratePendingBooks, save as saveBookDetails } from "@/lib/book-hydrate";
+import { confirmAiBooks, AI_BOOK_REASON } from "@/lib/book-ai";
 import { pickRoute, matchRule } from "@/lib/routing";
 import { aiSpaceOptions, aiSpaceId, routingEvent } from "@/lib/route-helpers";
 import { endOfToday } from "@/lib/due";
@@ -92,6 +93,7 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
     allSpaces
   );
   const { videoSpaceId, bookSpaceId } = kind;
+  const bookSpaceIds = kind.bookSpaceIds;
   const spaceById = kind.spaceById;
 
   const groupSpaceFor = (b: Blip) => {
@@ -104,6 +106,7 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
       domainRule: b.url ? matchRule(b.url, rules) : null,
       videoSpaceId: parseVideoUrl(b.url) ? videoSpaceId : null,
       bookSpaceId: parseBookUrl(b.url) ? bookSpaceId : null,
+      bookSpaceIds,
       groupSpaceId: groupSpaceFor(b),
       aiSpaceId: null,
       groupLabel: b.groupId ? groupById.get(b.groupId)?.label : null,
@@ -111,7 +114,10 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
 
   // Only ask the AI about blips the deterministic steps could not place.
   const needsAi = candidates.filter((b) => b.url && !deterministic(b));
-  const ai = new Map<string, { space: string | null; reason: string | null }>();
+  const ai = new Map<
+    string,
+    { space: string | null; reason: string | null; book: { title: string; author: string | null } | null }
+  >();
   let usedAi = false;
   const config = await getAiConfig();
   if (needsAi.length > 0 && aiSpaceOptions(allSpaces).length > 0) {
@@ -141,7 +147,7 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
           );
           chunk.forEach((b, j) => {
             const r = out.get(j);
-            if (r) ai.set(b.id, { space: r.space, reason: r.reason });
+            if (r) ai.set(b.id, { space: r.space, reason: r.reason, book: r.book });
           });
         }
         usedAi = true;
@@ -152,6 +158,18 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
         );
       }
     }
+  }
+
+  // Pages the AI says are a book must be confirmed before they may enter the book space.
+  const confirmed = await confirmAiBooks(
+    needsAi.map((b) => ({ key: b.id, url: b.url, book: ai.get(b.id)?.book ?? null }))
+  );
+  let tier2BookSpaceId: string | null = null;
+  if (confirmed.size > 0) {
+    const k = resolveKindSpaces([], allSpaces, { forceBook: true });
+    tier2BookSpaceId = k.bookSpaceId;
+    for (const [id, sp] of k.spaceById) spaceById.set(id, sp);
+    for (const id of k.bookSpaceIds) bookSpaceIds.add(id);
   }
 
   const now = new Date();
@@ -165,6 +183,9 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
       deterministic(b) ??
       pickRoute({
         videoSpaceId: null,
+        bookSpaceId: confirmed.has(b.id) ? tier2BookSpaceId : null,
+        bookReason: AI_BOOK_REASON,
+        bookSpaceIds,
         groupSpaceId: null,
         aiSpaceId: aiSpaceId(allSpaces, ai.get(b.id)?.space),
         aiReason: ai.get(b.id)?.reason,
@@ -204,6 +225,10 @@ export async function rerouteFeedBlips(): Promise<RerouteResult> {
     });
   }
 
+  for (const m of moves) {
+    const info = confirmed.get(m.blip.id);
+    if (info && m.route.spaceId === tier2BookSpaceId) saveBookDetails(m.blip, { info, exact: false });
+  }
   if (moves.some((m) => spaceById.get(m.route.spaceId)?.kind === "book")) {
     await hydratePendingBooks();
   }

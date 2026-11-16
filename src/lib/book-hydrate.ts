@@ -4,9 +4,10 @@ import { blips, bookDetails, spaces, type Blip } from "@/db/schema";
 import { parseBookUrl } from "@/lib/book";
 import { hasBookEvidence, lookupByIsbn, lookupByTitle, type BookInfo } from "@/lib/book-lookup";
 
-const CONCURRENCY = 4;
+const CONCURRENCY = 2;
 
-export type HydrateCounts = { ok: number; partial: number; failed: number };
+/** `deferred`: the lookup service was unavailable (rate limit, network); nothing was recorded, so it is retried later. */
+export type HydrateCounts = { ok: number; partial: number; failed: number; deferred: number };
 
 /** Active link blips in a book space that have no details row yet (never looked up). */
 export function pendingBookBlips(limit: number, spaceId?: string): Blip[] {
@@ -33,8 +34,9 @@ export function pendingBookBlips(limit: number, spaceId?: string): Blip[] {
 async function findBook(blip: Blip): Promise<{ info: BookInfo; exact: boolean } | null> {
   const ref = parseBookUrl(blip.url);
   if (ref?.isbn13) {
+    // The ISBN already qualifies the blip; one lookup for the details, no title guessing after it.
     const info = await lookupByIsbn(ref.isbn13);
-    if (info) return { info, exact: true };
+    return info ? { info, exact: true } : null;
   }
   const title = blip.title ?? "";
   if (title) {
@@ -50,8 +52,22 @@ async function findBook(blip: Blip): Promise<{ info: BookInfo; exact: boolean } 
   return null;
 }
 
-function save(blip: Blip, found: { info: BookInfo; exact: boolean } | null) {
+/** A book the URL itself identifies: keep its ISBN as a good match even if the API has nothing. */
+function saveUrlIsbn(blip: Pick<Blip, "id">, isbn13: string) {
+  db.insert(bookDetails)
+    .values({ blipId: blip.id, isbn13, authors: "[]", lookupStatus: "ok", fetchedAt: new Date() })
+    .onConflictDoNothing()
+    .run();
+}
+
+export function save(blip: Pick<Blip, "id" | "url" | "imageUrl" | "summary">, found: { info: BookInfo; exact: boolean } | null) {
   const now = new Date();
+  const urlIsbn = parseBookUrl(blip.url)?.isbn13;
+  if (!found && urlIsbn) {
+    saveUrlIsbn(blip, urlIsbn);
+    // Stored as a good match, but counted as "no details found" for the caller.
+    return "failed" as const;
+  }
   if (!found) {
     // Keep any earlier good details; only record a failure when there are none.
     db.insert(bookDetails)
@@ -95,7 +111,7 @@ function save(blip: Blip, found: { info: BookInfo; exact: boolean } | null) {
  * similar to the saved title, so non-book pages are not rewritten.
  */
 export async function hydrateBooks(targets: Blip[]): Promise<HydrateCounts> {
-  const counts: HydrateCounts = { ok: 0, partial: 0, failed: 0 };
+  const counts: HydrateCounts = { ok: 0, partial: 0, failed: 0, deferred: 0 };
   let next = 0;
   await Promise.all(
     Array.from({ length: Math.min(CONCURRENCY, targets.length) }, async () => {
@@ -105,7 +121,10 @@ export async function hydrateBooks(targets: Blip[]): Promise<HydrateCounts> {
         try {
           found = await findBook(blip);
         } catch (err) {
+          // Unavailable (e.g. rate limited): record nothing so a later run retries.
           console.error("Book lookup failed", err instanceof Error ? err.message : err);
+          counts.deferred++;
+          continue;
         }
         counts[save(blip, found)]++;
       }

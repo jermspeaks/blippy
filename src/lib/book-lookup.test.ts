@@ -6,6 +6,8 @@ import {
   lookupByTitle,
   searchBooks,
   hasBookEvidence,
+  confirmBook,
+  LookupUnavailableError,
 } from "./book-lookup";
 
 const google = (items: unknown[]) =>
@@ -102,9 +104,24 @@ describe("lookups", () => {
     expect(googleDown?.title).toBe("Atomic Habits");
   });
 
-  it("returns null when every source fails", async () => {
+  it("throws (retry later) when every source errors, returns null on a clean miss", async () => {
     const f = stub({});
-    expect(await lookupByIsbn("9780735211292", { fetch: f, googleKey: "k" })).toBeNull();
+    await expect(lookupByIsbn("9780735211292", { fetch: f, googleKey: "k" })).rejects.toBeInstanceOf(
+      LookupUnavailableError
+    );
+    const clean = stub({
+      google: () => google([]),
+      ol: () => new Response(JSON.stringify({ docs: [] })),
+    });
+    expect(await lookupByIsbn("9780735211292", { fetch: clean, googleKey: "k" })).toBeNull();
+  });
+
+  it("confirms an AI-named book by title and author surname", async () => {
+    const f = stub({ google: () => google([vol("Atomic Habits")]) });
+    const deps = { fetch: f, googleKey: "k" };
+    expect((await confirmBook("Atomic Habits", "James Clear", deps))?.title).toBe("Atomic Habits");
+    expect(await confirmBook("Atomic Habits", "Someone Else", deps)).toBeNull();
+    expect(await confirmBook("Totally Unrelated Title", "James Clear", deps)).toBeNull();
   });
 
   it("title lookup only accepts a similar-enough match", async () => {

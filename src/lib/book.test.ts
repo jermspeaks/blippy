@@ -52,6 +52,24 @@ describe("parseBookUrl", () => {
     });
   });
 
+  it("recognizes the big publishers' book pages", () => {
+    expect(
+      parseBookUrl("https://www.hachettebookgroup.com/titles/james-clear/atomic-habits/9780735211292/")
+    ).toEqual({ provider: "hachette", isbn13: "9780735211292" });
+    expect(parseBookUrl("https://www.harpercollins.com/products/the-hobbit-j-r-r-tolkien?variant=1")).toEqual({
+      provider: "harpercollins",
+      isbn13: null,
+    });
+    expect(parseBookUrl("https://us.macmillan.com/books/9781250178602/thesevendeaths")).toEqual({
+      provider: "macmillan",
+      isbn13: "9781250178602",
+    });
+    // Publisher pages that are not a book.
+    expect(parseBookUrl("https://www.hachettebookgroup.com/")).toBeNull();
+    expect(parseBookUrl("https://www.harpercollins.com/blogs/news/post")).toBeNull();
+    expect(parseBookUrl("https://us.macmillan.com/authors/jane-doe")).toBeNull();
+  });
+
   it("ignores non-book pages", () => {
     expect(parseBookUrl("https://www.goodreads.com/author/show/1")).toBeNull();
     expect(parseBookUrl("https://www.amazon.com/dp/B08N5WRWNW")).toBeNull(); // not an ISBN: any product

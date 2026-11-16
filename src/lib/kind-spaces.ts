@@ -14,17 +14,25 @@ import { ensureBookSpace } from "@/lib/book-space";
  */
 export function resolveKindSpaces(
   urls: (string | null)[],
-  allSpaces: Space[]
-): { videoSpaceId: string | null; bookSpaceId: string | null; spaceById: Map<string, Space> } {
+  allSpaces: Space[],
+  opts: { forceBook?: boolean } = {}
+): {
+  videoSpaceId: string | null;
+  bookSpaceId: string | null;
+  spaceById: Map<string, Space>;
+  /** Every book-kind space, so guessed routes can be kept out of them. */
+  bookSpaceIds: Set<string>;
+} {
   const spaceById = new Map(allSpaces.map((s) => [s.id, s]));
   const video = urls.some((u) => parseVideoUrl(u))
     ? db.transaction((tx) => ensureVideoSpace(tx))
     : null;
-  const book = urls.some((u) => parseBookUrl(u))
+  const book = opts.forceBook || urls.some((u) => parseBookUrl(u))
     ? db.transaction((tx) => ensureBookSpace(tx))
     : null;
   for (const s of [video, book]) if (s) spaceById.set(s.id, s);
-  return { videoSpaceId: video?.id ?? null, bookSpaceId: book?.id ?? null, spaceById };
+  const bookSpaceIds = new Set([...spaceById.values()].filter((s) => s.kind === "book").map((s) => s.id));
+  return { videoSpaceId: video?.id ?? null, bookSpaceId: book?.id ?? null, spaceById, bookSpaceIds };
 }
 
 /** Re-read a space after a kind change (adoption mutates the row). */

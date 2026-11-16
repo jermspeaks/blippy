@@ -37,6 +37,22 @@ vi.mock("@/lib/book-lookup", async (importOriginal) => ({
     infoUrl: null,
   })),
   lookupByTitle: vi.fn(async () => null),
+  confirmBook: vi.fn(async (t: string) =>
+    t === "Real Novel"
+      ? {
+          title: "Real Novel",
+          subtitle: null,
+          authors: ["Ann Author"],
+          isbn13: "9781250178602",
+          publisher: "Macmillan",
+          publishedYear: 2020,
+          pageCount: 300,
+          description: null,
+          coverUrl: "https://covers.openlibrary.org/b/isbn/9781250178602-L.jpg",
+          infoUrl: null,
+        }
+      : null
+  ),
   searchBooks: vi.fn(async () => []),
 }));
 vi.mock("@/lib/ai/organize", () => ({
@@ -45,7 +61,19 @@ vi.mock("@/lib/ai/organize", () => ({
       new Map(
         items.map((i) => [
           i.id,
-          i.url.includes("book")
+          i.url.includes("realnovel") || i.url.includes("ghostnovel")
+            ? {
+                title: "Novel page",
+                summary: "s",
+                group: null,
+                space: null,
+                reason: null,
+                book: {
+                  title: i.url.includes("realnovel") ? "Real Novel" : "Ghost Novel",
+                  author: "Ann Author",
+                },
+              }
+            : i.url.includes("book")
             ? {
                 title: "A Book",
                 summary: "s",
@@ -228,5 +256,28 @@ describe("capture routing + audit log", () => {
     });
     const [d] = await db.select().from(bookDetails).where(eq(bookDetails.blipId, b.id));
     expect(d).toMatchObject({ lookupStatus: "ok", isbn13: "9780735211292" });
+  });
+
+  it("places an AI-named book only after the book database confirms it", async () => {
+    const r = await importMarkdown(
+      "[a](https://store.example.com/realnovel)\n[b](https://store.example.com/ghostnovel)"
+    );
+    expect(r.ok).toBe(true);
+    const real = (await db.select().from(blips).where(eq(blips.url, "https://store.example.com/realnovel")))[0];
+    const ghost = (await db.select().from(blips).where(eq(blips.url, "https://store.example.com/ghostnovel")))[0];
+    const [bookSpace] = await db.select().from(spaces).where(eq(spaces.kind, "book"));
+    expect(real.spaceId).toBe(bookSpace.id);
+    expect(real.routedReason).toMatch(/confirmed/);
+    expect(real.title).toBe("Real Novel");
+    expect((await db.select().from(bookDetails).where(eq(bookDetails.blipId, real.id)))[0]).toMatchObject({
+      isbn13: "9781250178602",
+    });
+    expect(ghost.spaceId).toBeNull();
+  });
+
+  it("an AI guess at the book space without a named book stays in the feed", async () => {
+    await importMarkdown("[x](https://example.org/just-a-book-review)");
+    const [b] = await db.select().from(blips).where(eq(blips.url, "https://example.org/just-a-book-review"));
+    expect(b.spaceId).toBeNull();
   });
 });

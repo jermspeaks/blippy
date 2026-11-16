@@ -4,7 +4,10 @@ export type BookProvider =
   | "bookshop"
   | "openlibrary"
   | "simonandschuster"
-  | "penguinrandomhouse";
+  | "penguinrandomhouse"
+  | "hachette"
+  | "harpercollins"
+  | "macmillan";
 
 export type BookRef = { provider: BookProvider; isbn13: string | null };
 
@@ -78,6 +81,18 @@ export function parseBookUrl(raw: string | null | undefined): BookRef | null {
   }
   if (host === "penguinrandomhouse.com") {
     return /^\/books\/\d+\//.test(path) ? { provider: "penguinrandomhouse", isbn13: null } : null;
+  }
+  if (host === "hachettebookgroup.com") {
+    const m = path.match(/^\/titles\/[^/]+\/[^/]+\/(\d{13})\/?$/);
+    return m ? { provider: "hachette", isbn13: toIsbn13(m[1]) } : null;
+  }
+  if (host === "harpercollins.com") {
+    // Product slugs carry no ISBN (the ?variant id is a shop id), so the book is found by title.
+    return /^\/products\/[^/]+\/?$/.test(path) ? { provider: "harpercollins", isbn13: null } : null;
+  }
+  if (host === "macmillan.com" || host.endsWith(".macmillan.com")) {
+    const m = path.match(/^\/books\/(\d{13})(?:\/|$)/);
+    return m ? { provider: "macmillan", isbn13: toIsbn13(m[1]) } : null;
   }
   return null;
 }

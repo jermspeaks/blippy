@@ -9,7 +9,8 @@ For each input link, write:
 - group: a short topic label (2-4 words, Title Case) when this link is topically similar to at least one other link in the batch or to an existing group; otherwise null. Nested/indented links usually relate to the link above them. If a topic fits an existing group label, reuse that label exactly.
 - space: if the input lists "spaces" (each with a name and description) and this link clearly belongs in one of them, that space's name copied exactly; otherwise null. Only choose a space when the fit is obvious from its name and description; when unsure, use null.
 - reason: when space is not null, one short sentence (max 120 chars) saying why this link fits that space; otherwise null.
-Respond with only a JSON object: {"blips":[{"id":number,"title":string,"summary":string,"group":string|null,"space":string|null,"reason":string|null}]}. Include every id exactly once.`;
+- book: only when the link is the page for ONE specific published book (a retailer, publisher or catalog page for that title), an object {"title": the book's own title, "author": its author or null}; otherwise null. Articles, newsletters (Substack and similar), reviews, lists of books and general pages are never books. Only name a book you recognize; when unsure, use null.
+Respond with only a JSON object: {"blips":[{"id":number,"title":string,"summary":string,"group":string|null,"space":string|null,"reason":string|null,"book":{"title":string,"author":string|null}|null}]}. Include every id exactly once.`;
 
 export function buildSystemPrompt(extraInstructions: string | undefined): string {
   const extra = extraInstructions?.trim();

@@ -11,7 +11,7 @@ The feed is an **inbox**: the place to process captured links until each has a h
 ## Decisions
 
 - **Save, then triage:** capture saves immediately (no preview step); triage happens in the inbox.
-- **Routing order, first match wins:** (0) a user domain rule (e.g. `github.com` -> a space, see [routing-command-center.md](routing-command-center.md)), (1) kind rules (video link -> video space, book link -> book space), (2) the blip's topic group is linked to a space, (3) the AI matched it to an existing space, (4) otherwise it stays in the feed. Implemented in `pickRoute`.
+- **Routing order, first match wins:** (0) a user domain rule (e.g. `github.com` -> a space, see [routing-command-center.md](routing-command-center.md)), (1) kind rules (video link -> video space; a verified book -> book space, see [book-space.md](book-space.md)), (2) the blip's topic group is linked to a space, (3) the AI matched it to an existing space (neither (2) nor (3) may place a blip in a book space), (4) otherwise it stays in the feed. Implemented in `pickRoute`.
 - **AI space matches apply automatically** (low friction). The AI is given each eligible space's name and description and must copy a name exactly; names it invents are ignored. Only general spaces with auto-intake on are eligible (video routes by rule).
 - **Routing reason + audit log:** each decision gets a reason (AI: one short sentence it returns; rule/group: fixed text) stored on the blip and in the `routing_events` table, viewable at `/routing`. See [routing-command-center.md](routing-command-center.md).
 - **`blips.routed_by` (`rule` | `group` | `ai`)** records how a blip was auto-routed so it isn't invisible; space views show "Auto-sorted by ...". Manual store and return-to-feed clear it.

@@ -19,6 +19,8 @@ export type OrganizedBlip = {
   space: string | null;
   /** Short explanation for the space pick; null when no space was chosen. */
   reason: string | null;
+  /** The one specific book this page is about, as the AI recognized it; null for anything else. */
+  book: { title: string; author: string | null } | null;
 };
 
 export type SpaceOption = { name: string; description: string | null };
@@ -32,6 +34,9 @@ const itemSchema = z.object({
   group: z.string().nullish(),
   space: z.string().nullish(),
   reason: z.string().nullish(),
+  book: z
+    .object({ title: z.string().nullish(), author: z.string().nullish() })
+    .nullish(),
 });
 const responseSchema = z.object({ blips: z.array(z.unknown()) });
 
@@ -73,7 +78,11 @@ export async function organizeLinks(
     if (!item.success) continue;
     const b = item.data;
     const space = spaceByLower.get((b.space ?? "").trim().toLowerCase()) ?? null;
+    const bookTitle = b.book?.title?.trim().slice(0, 300);
     byId.set(b.id, {
+      book: bookTitle
+        ? { title: bookTitle, author: b.book?.author?.trim().slice(0, 200) || null }
+        : null,
       // Empty strings let the caller fall back to page metadata.
       title: (b.title ?? "").trim().slice(0, 200),
       summary: (b.summary ?? "").trim().slice(0, 500),

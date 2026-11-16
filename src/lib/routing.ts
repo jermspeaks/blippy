@@ -63,6 +63,13 @@ export function pickRoute(opts: {
   domainRule?: { spaceId: string; pattern: string } | null;
   videoSpaceId: string | null;
   bookSpaceId?: string | null;
+  /** Why the book space was chosen (default "Book link"). */
+  bookReason?: string;
+  /**
+   * Book spaces. The topic-group and AI routes may not place a blip here, since
+   * those only guess; a book is placed by `bookSpaceId` after it is verified.
+   */
+  bookSpaceIds?: ReadonlySet<string>;
   groupSpaceId: string | null;
   aiSpaceId: string | null;
   groupLabel?: string | null;
@@ -83,20 +90,23 @@ export function pickRoute(opts: {
     };
   }
   if (opts.bookSpaceId) {
-    return { spaceId: opts.bookSpaceId, routedBy: "rule", reason: "Book link" };
+    return { spaceId: opts.bookSpaceId, routedBy: "rule", reason: opts.bookReason ?? "Book link" };
   }
-  if (opts.groupSpaceId) {
+  const guessed = (id: string | null) => id && !opts.bookSpaceIds?.has(id) ? id : null;
+  const groupSpaceId = guessed(opts.groupSpaceId);
+  const aiSpaceId = guessed(opts.aiSpaceId);
+  if (groupSpaceId) {
     return {
-      spaceId: opts.groupSpaceId,
+      spaceId: groupSpaceId,
       routedBy: "group",
       reason: opts.groupLabel
         ? `Topic group "${opts.groupLabel}" is linked to this space`
         : "Its topic group is linked to this space",
     };
   }
-  if (opts.aiSpaceId) {
+  if (aiSpaceId) {
     return {
-      spaceId: opts.aiSpaceId,
+      spaceId: aiSpaceId,
       routedBy: "ai",
       reason: opts.aiReason || "AI matched the space name and description",
     };

@@ -25,6 +25,7 @@ export async function fetchMissingBookDetails(spaceId: string) {
     attempted: pending,
     found: counts.ok + counts.partial,
     failed: counts.failed,
+    deferred: counts.deferred,
   };
 }
 
@@ -35,9 +36,12 @@ export async function refreshBook(blipId: string) {
   // A successful lookup replaces earlier details; a failed one keeps them.
   const counts = await hydrateBooks([blip]);
   revalidateSpace(blip.spaceId);
+  if (counts.deferred > 0) {
+    return { ok: false as const, error: "Book lookup is busy right now. Try again in a minute." };
+  }
   return {
     ok: true as const,
-    found: counts.failed === 0,
+    found: counts.ok + counts.partial > 0,
   };
 }
 

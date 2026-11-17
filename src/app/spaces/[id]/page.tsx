@@ -31,7 +31,9 @@ export default async function SpaceDetailPage({
   // Book blips that were never looked up (no details row).
   const readingIds = await readingItemIdsByBlip(blips.map((b) => b.id));
   const missingDetails = blips.filter((b) => !b.book).length;
-  const missingRepoDetails = blips.filter((b) => b.url && !b.repo).length;
+  const missingRepoDetails = blips.filter(
+    (b) => b.url && (!b.repo || (b.repo.lookupStatus === "ok" && b.repo.readmeExcerpt === null))
+  ).length;
 
   return (
     <div

@@ -2,6 +2,11 @@
 
 Completed work, newest first. Planned work lives in [FUTURE.md](FUTURE.md); design notes are in [discovery/](discovery/).
 
+## Unreleased
+
+- Reading list: copy highlights as markdown or download a `.md` file.
+- Code space: README excerpt under each repo (migration 0014) and a filter / language / sort toolbar.
+
 ## 1.0.0 (2026-11-16)
 
 ### Reading list

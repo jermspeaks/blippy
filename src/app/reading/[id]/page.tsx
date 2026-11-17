@@ -63,7 +63,13 @@ export default async function ReaderPage({
           </div>
         </header>
         {item.extractStatus === "ok" && item.contentHtml ? (
-          <ReaderArticle itemId={item.id} html={item.contentHtml} initialHighlights={highlights} />
+          <ReaderArticle
+            itemId={item.id}
+            html={item.contentHtml}
+            initialHighlights={highlights}
+            title={item.title}
+            url={item.url}
+          />
         ) : (
           <div className="rounded-lg border p-4">
             <p className="font-medium">The article text wasn&apos;t saved.</p>

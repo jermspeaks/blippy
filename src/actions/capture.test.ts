@@ -57,6 +57,7 @@ vi.mock("@/lib/book-lookup", async (importOriginal) => ({
 }));
 vi.mock("@/lib/repo-lookup", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/repo-lookup")>()),
+  lookupReadmeExcerpt: vi.fn(async () => ""),
   lookupRepo: vi.fn(async () => ({
     description: "A repo",
     stars: 3,

@@ -40,7 +40,7 @@ Key/value store (`key` PK, `value`). Holds `ai.provider` and `ai.model.<provider
 
 ### repo_details
 
-1:1 with a blip in a code space (migration 0010): `blip_id` (PK, FK -> `blips.id`, cascade delete), `provider` (`github` | `gitlab` | `bitbucket` | `codeberg` | `sourcehut`), `owner`, `name`, `description`, `stars`, `language`, `topics` (JSON array), `license`, `homepage`, `pushed_at`, `archived`, `lookup_status` (`ok` | `failed`), `fetched_at`. No row means "never looked up" (or the host was unavailable and the lookup is deferred). The blip's title, image and link are not changed by a lookup.
+1:1 with a blip in a code space (migration 0010): `blip_id` (PK, FK -> `blips.id`, cascade delete), `provider` (`github` | `gitlab` | `bitbucket` | `codeberg` | `sourcehut`), `owner`, `name`, `description`, `stars`, `language`, `topics` (JSON array), `license`, `homepage`, `pushed_at`, `archived`, `readme_excerpt` (migration 0014; null = not fetched yet, "" = none), `lookup_status` (`ok` | `failed`), `fetched_at`. No row means "never looked up" (or the host was unavailable and the lookup is deferred). The blip's title, image and link are not changed by a lookup.
 
 ### reading_items
 

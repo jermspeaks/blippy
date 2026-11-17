@@ -1,25 +1,17 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Archive, ExternalLink, RefreshCw, Star, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { unstoreBlip } from "@/actions/spaces";
 import { setBlipFizzled } from "@/actions/blips";
 import { refreshRepo } from "@/actions/repos";
-import type { Blip, RepoDetails } from "@/db/schema";
+import { parseTopics, repoLanguages, repoSorts, viewRepos, type RepoRowData, type RepoSort } from "@/lib/repo-view";
 import { routedByNote } from "@/components/stored-blip-item";
-
-export function parseTopics(raw: string | undefined): string[] {
-  try {
-    const a = JSON.parse(raw ?? "[]");
-    return Array.isArray(a) ? a.filter((x): x is string => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
 
 export function compactCount(n: number): string {
   if (n < 1000) return String(n);
@@ -27,8 +19,6 @@ export function compactCount(n: number): string {
 }
 
 const MAX_TOPICS = 4;
-
-export type RepoRowData = Blip & { repo: RepoDetails | null };
 
 function RepoRow({ blip, spaceId }: { blip: RepoRowData; spaceId: string }) {
   const router = useRouter();
@@ -95,6 +85,11 @@ function RepoRow({ blip, spaceId }: { blip: RepoRowData; spaceId: string }) {
         </div>
         {description && (
           <p className="text-muted-foreground line-clamp-2 text-sm">{description}</p>
+        )}
+        {repo?.readmeExcerpt && repo.readmeExcerpt !== description && (
+          <p className="text-muted-foreground/80 line-clamp-2 text-xs italic" title="From the README">
+            {repo.readmeExcerpt}
+          </p>
         )}
         {note && <p className="text-muted-foreground text-xs">{note}</p>}
       </TableCell>
@@ -164,25 +159,91 @@ function RepoRow({ blip, spaceId }: { blip: RepoRowData; spaceId: string }) {
   );
 }
 
+const sortLabels: Record<RepoSort, string> = {
+  default: "Default order",
+  name: "Name",
+  stars: "Most stars",
+  updated: "Recently updated",
+  language: "Language",
+};
+
 export function RepoTable({ blips, spaceId }: { blips: RepoRowData[]; spaceId: string }) {
+  const [query, setQuery] = useState("");
+  const [language, setLanguage] = useState("");
+  const [sort, setSort] = useState<RepoSort>("default");
+  const languages = useMemo(() => repoLanguages(blips), [blips]);
+  const rows = useMemo(() => viewRepos(blips, { query, language, sort }), [blips, query, language, sort]);
+  const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Repository</TableHead>
-          <TableHead>Language</TableHead>
-          <TableHead className="text-right">Stars</TableHead>
-          <TableHead className="hidden md:table-cell">Topics</TableHead>
-          <TableHead className="hidden xl:table-cell">License</TableHead>
-          <TableHead>Updated</TableHead>
-          <TableHead />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {blips.map((b) => (
-          <RepoRow key={b.id} blip={b} spaceId={spaceId} />
-        ))}
-      </TableBody>
-    </Table>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter by name, description, topic…"
+          aria-label="Filter repositories"
+          className="max-w-xs"
+        />
+        {languages.length > 0 && (
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            aria-label="Filter by language"
+            className={selectClass}
+          >
+            <option value="">All languages</option>
+            {languages.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
+        )}
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as RepoSort)}
+          aria-label="Sort repositories"
+          className={selectClass}
+        >
+          {repoSorts.map((s) => (
+            <option key={s} value={s}>
+              {sortLabels[s]}
+            </option>
+          ))}
+        </select>
+        {(query || language) && (
+          <span className="text-muted-foreground text-sm">
+            {rows.length} of {blips.length}
+          </span>
+        )}
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Repository</TableHead>
+            <TableHead>Language</TableHead>
+            <TableHead className="text-right">Stars</TableHead>
+            <TableHead className="hidden md:table-cell">Topics</TableHead>
+            <TableHead className="hidden xl:table-cell">License</TableHead>
+            <TableHead>Updated</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((b) => (
+            <RepoRow key={b.id} blip={b} spaceId={spaceId} />
+          ))}
+          {rows.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
+                No repositories match.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

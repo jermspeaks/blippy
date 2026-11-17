@@ -1,6 +1,6 @@
 # Code space
 
-- **Status:** Built (v1); README excerpt and manual edit are follow-ups
+- **Status:** Built (v1) with README excerpts and sort/filter; manual edit and scheduled refresh are follow-ups
 - **Date started:** 2026-11-15
 - **Related:** [book-space.md](book-space.md) and [video-space.md](video-space.md) (pattern followed), [inbox-routing.md](inbox-routing.md), [spaces.md](spaces.md), `src/lib/repo.ts`, `src/lib/repo-lookup.ts`, `src/lib/repo-hydrate.ts`, `src/lib/code-space.ts`, `src/components/repo-table.tsx`, `src/actions/repos.ts`, `drizzle/0010_repo_details.sql`, [../FUTURE.md](../FUTURE.md)
 
@@ -21,8 +21,8 @@ A **code** space shows saved code repositories as cards that answer "why did I s
 
 ## Open questions
 
-- README excerpt or "why saved" note on the card (a second API call per repo; `blips.summary` and the description cover most of it for now).
-- Sort by stars / last update; filter by language or topic.
+- README excerpt: built. A second API call per repo (GitHub `/readme`, GitLab/Bitbucket/Codeberg raw `README.md` at the default branch; SourceHut has none). `readmeExcerpt()` takes the first real paragraph (skips headings, badges, HTML, code, tables, lists), max 300 chars. Stored in `repo_details.readme_excerpt` (migration 0014): null = not fetched (retried by "Look up N more" and refresh; a busy host never records "none"), "" = no README. Shown in italics under the description when it differs.
+- Sort and filter: built, client-side in the table. Text filter matches name, description, README intro, language and topics (every word); language dropdown; sort by default order, name, stars, recently updated, language (rows missing the value go last). Logic in `src/lib/repo-view.ts`.
 - Refresh stale details on a schedule (stars and activity change); today only on demand.
 - Hugging Face, npm, PyPI and crates.io pages (packages, not repos) are not included.
 
@@ -31,4 +31,5 @@ A **code** space shows saved code repositories as cards that answer "why did I s
 - [x] Code kind, `parseRepoUrl`, routing fallback, adoption/conversion.
 - [x] Per-host lookup and `repo_details`.
 - [x] Repo table (first built as a card grid, then condensed to a table).
-- [ ] README excerpt; manual edit of a card; sort/filter; scheduled refresh.
+- [x] README excerpt; sort/filter.
+- [ ] Manual edit of a card; scheduled refresh.

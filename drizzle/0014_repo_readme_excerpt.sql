@@ -1,0 +1,1 @@
+ALTER TABLE `repo_details` ADD `readme_excerpt` text;

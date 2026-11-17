@@ -97,6 +97,8 @@ export const repoDetails = sqliteTable("repo_details", {
   homepage: text("homepage"),
   pushedAt: integer("pushed_at", { mode: "timestamp" }),
   archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+  // First paragraph of the README. null = not fetched yet (retried); "" = the repo has none.
+  readmeExcerpt: text("readme_excerpt"),
   // ok = details fetched; failed = repo not found / host has no API (retry from the card).
   lookupStatus: text("lookup_status", { enum: repoLookupStatuses }).notNull(),
   fetchedAt: integer("fetched_at", { mode: "timestamp" }).notNull(),

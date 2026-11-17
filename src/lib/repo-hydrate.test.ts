@@ -10,13 +10,14 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/repo-lookup", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/repo-lookup")>()),
   lookupRepo: vi.fn(),
+  lookupReadmeExcerpt: vi.fn(async () => ""),
 }));
 
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { blips, repoDetails, spaces } from "@/db/schema";
-import { lookupRepo, RepoLookupUnavailableError } from "@/lib/repo-lookup";
+import { lookupReadmeExcerpt, lookupRepo, RepoLookupUnavailableError } from "@/lib/repo-lookup";
 import { hydratePendingRepos, pendingRepoBlips } from "./repo-hydrate";
 import { ensureCodeSpace, sweepRepoBlips } from "./code-space";
 import { refreshRepo } from "@/actions/repos";
@@ -76,6 +77,19 @@ describe("hydrating repo details", () => {
     expect(counts.ok).toBeGreaterThanOrEqual(1);
     expect(await detailsOf("r1")).toMatchObject({ provider: "github", owner: "iced-rs", name: "iced", stars: 24000, language: "Rust", topics: '["gui"]', lookupStatus: "ok" });
     expect(await blipOf("r1")).toMatchObject({ title: "iced", summary: "A GUI library" });
+  });
+
+  it("stores the README excerpt, and retries it later when the host was busy", async () => {
+    vi.mocked(lookupRepo).mockResolvedValue(info());
+    vi.mocked(lookupReadmeExcerpt).mockRejectedValueOnce(new RepoLookupUnavailableError("HTTP 403"));
+    await seed("rm1", "https://github.com/o/readme", { spaceId: "sp-pp" });
+    await hydratePendingRepos(25, "sp-pp");
+    expect((await detailsOf("rm1")).readmeExcerpt).toBeNull();
+    expect(pendingRepoBlips(25, "sp-pp").map((b) => b.id)).toContain("rm1");
+    vi.mocked(lookupReadmeExcerpt).mockResolvedValueOnce("Fast, native GUI toolkit.");
+    await hydratePendingRepos(25, "sp-pp");
+    expect((await detailsOf("rm1")).readmeExcerpt).toBe("Fast, native GUI toolkit.");
+    expect(pendingRepoBlips(25, "sp-pp").map((b) => b.id)).not.toContain("rm1");
   });
 
   it("keeps an existing summary", async () => {

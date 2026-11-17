@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Highlighter, MessageSquarePlus, Pencil } from "lucide-react";
+import { Copy, Download, Highlighter, MessageSquarePlus, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
 } from "@/lib/highlight-anchor";
 import { highlightColors, type HighlightColor, type ReadingHighlight } from "@/db/schema";
 import { cn } from "@/lib/utils";
+import { exportFileName, highlightsToMarkdown } from "@/lib/highlight-export";
 
 const swatch: Record<HighlightColor, string> = {
   yellow: "bg-yellow-300",
@@ -167,10 +168,15 @@ export function ReaderArticle({
   itemId,
   html,
   initialHighlights,
+  title = "",
+  url = null,
 }: {
   itemId: string;
   html: string;
   initialHighlights: ReadingHighlight[];
+  /** For the markdown export header. */
+  title?: string;
+  url?: string | null;
 }) {
   const ref = useRef<HTMLElement>(null);
   const [highlights, setHighlights] = useState(initialHighlights);
@@ -268,6 +274,26 @@ export function ReaderArticle({
     (a, b) => (positions[a.id] ?? Number.MAX_SAFE_INTEGER) - (positions[b.id] ?? Number.MAX_SAFE_INTEGER)
   );
 
+  const markdown = () => highlightsToMarkdown({ title, url }, ordered);
+
+  async function copyMarkdown() {
+    try {
+      await navigator.clipboard.writeText(markdown());
+      toast.success("Highlights copied as markdown");
+    } catch {
+      toast.error("Couldn't copy. Try Download instead.");
+    }
+  }
+
+  function downloadMarkdown() {
+    const href = URL.createObjectURL(new Blob([markdown()], { type: "text/markdown" }));
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = exportFileName(title);
+    a.click();
+    URL.revokeObjectURL(href);
+  }
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -279,6 +305,18 @@ export function ReaderArticle({
       </div>
       {panelOpen && (
         <div className="bg-card mb-6 space-y-3 rounded-lg border p-3">
+          {ordered.length > 0 && (
+            <div className="flex justify-end gap-1">
+              <Button variant="ghost" size="sm" onClick={copyMarkdown}>
+                <Copy className="size-3" />
+                Copy as markdown
+              </Button>
+              <Button variant="ghost" size="sm" onClick={downloadMarkdown}>
+                <Download className="size-3" />
+                Download .md
+              </Button>
+            </div>
+          )}
           {ordered.length === 0 ? (
             <p className="text-muted-foreground text-sm">No highlights yet. Select some text in the article.</p>
           ) : (

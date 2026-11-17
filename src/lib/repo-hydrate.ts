@@ -1,15 +1,15 @@
-import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, or } from "drizzle-orm";
 import { db } from "@/db";
 import { blips, repoDetails, spaces, type Blip } from "@/db/schema";
 import { parseRepoUrl } from "@/lib/repo";
-import { lookupRepo } from "@/lib/repo-lookup";
+import { lookupReadmeExcerpt, lookupRepo } from "@/lib/repo-lookup";
 
 const CONCURRENCY = 3;
 
 /** `deferred`: the host was unavailable (rate limit, network); nothing was recorded, so it is retried later. */
 export type RepoHydrateCounts = { ok: number; failed: number; deferred: number };
 
-/** Active repository blips in a code space that have no details row yet. */
+/** Active repository blips in a code space with no details row yet, or details but no README excerpt tried yet. */
 export function pendingRepoBlips(limit: number, spaceId?: string): Blip[] {
   return db
     .select({ blip: blips })
@@ -21,7 +21,10 @@ export function pendingRepoBlips(limit: number, spaceId?: string): Blip[] {
         eq(spaces.kind, "code"),
         eq(blips.status, "active"),
         isNotNull(blips.url),
-        isNull(repoDetails.blipId),
+        or(
+          isNull(repoDetails.blipId),
+          and(eq(repoDetails.lookupStatus, "ok"), isNull(repoDetails.readmeExcerpt))
+        ),
         spaceId ? eq(blips.spaceId, spaceId) : undefined
       )
     )
@@ -58,6 +61,15 @@ export async function hydrateRepos(targets: Blip[]): Promise<RepoHydrateCounts> 
           continue;
         }
         const now = new Date();
+        // Best effort: when the host is busy the excerpt stays unset (null) and is retried later.
+        let readme: string | undefined;
+        if (info) {
+          try {
+            readme = await lookupReadmeExcerpt(ref);
+          } catch (err) {
+            console.error("README lookup failed", err instanceof Error ? err.message : err);
+          }
+        }
         if (!info) {
           // Keep earlier good details; record a failure only when there are none.
           db.insert(repoDetails)
@@ -77,6 +89,7 @@ export async function hydrateRepos(targets: Blip[]): Promise<RepoHydrateCounts> 
           homepage: info.homepage,
           pushedAt: info.pushedAt,
           archived: info.archived,
+          ...(readme === undefined ? {} : { readmeExcerpt: readme }),
           lookupStatus: "ok" as const,
           fetchedAt: now,
         };

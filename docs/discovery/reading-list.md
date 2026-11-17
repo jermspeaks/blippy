@@ -84,7 +84,7 @@ Some saved articles are really "read later". A **reading list**, separate from s
 ## Open questions
 
 - Stored text does not expire on a schedule (decided: kept until removed or its blip is deleted).
-- Highlights: export to Obsidian/markdown, or a "copy highlights" button (not built).
+- Highlights export: built. The Highlights panel has "Copy as markdown" and "Download .md" (title, source link, each quote as a blockquote with its note, in article order). Obsidian-specific export is not built.
 
 ## Out of scope / later
 

@@ -11,14 +11,14 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md).
    - *Moves:* scaffolded microtasks (e.g. "talk 2 min", "add link", "choose one") when a blip is in the feed; log completion.
    - *Maturity:* clear flow from captured to cultivating to project / matured or fizzled; UI and feed respect status.
    - Blips should progress, or die out, along paths that depend on what they are (knowledge base, recipe book, project seed), not one FSRS loop.
-3. **Decisions API for routing.** Use the new Decisions API to route blips that domain rules miss. Needs an integration design.
+3. **Decisions API (TypeSafe Jev) for routing.** Designed and API-probed; awaiting go-ahead on shadow mode and thresholds. See [discovery/jev-routing.md](discovery/jev-routing.md).
 
 ## Follow-ups to shipped features
 
 - **Routing:** log manual corrections as routing events and show the log in the capture result panel. Support spaces with multiple topics or aliases.
 - **Books:** author check for ISBN-less URLs (e.g. HarperCollins product pages can match the wrong book); genre and price as stretch goals.
-- **Code space:** README excerpt, sort/filter, scheduled refresh.
-- **Reading list:** copy/export highlights (markdown), local image caching.
+- **Code space:** scheduled refresh; manual edit of a card.
+- **Reading list:** Obsidian-specific highlight export, local image caching.
 - **Feed:** per-day quota; optional per-space feed limits; refine the SRS algorithm (intervals, streak).
 
 ## Ideas not yet scheduled
@@ -32,6 +32,7 @@ Completed work is recorded in [CHANGELOG.md](CHANGELOG.md).
 - AI summary of each space.
 - Expandable side nav showing spaces and their topics.
 - In-app changelog page (in Settings) rendering [CHANGELOG.md](CHANGELOG.md).
+- Different type of captures. Links vs. raw text
 
 ## Later phases
 

@@ -5,7 +5,8 @@
 - [ARCHITECTURE.md](ARCHITECTURE.md): tech stack, structure, data flow.
 - [DATA_MODEL.md](DATA_MODEL.md): tables and relationships.
 - [Testing.md](Testing.md): unit and E2E testing.
-- [FUTURE.md](FUTURE.md): later phases.
+- [CHANGELOG.md](CHANGELOG.md): completed work by version.
+- [FUTURE.md](FUTURE.md): roadmap and ideas.
 
 ## Discovery docs
 

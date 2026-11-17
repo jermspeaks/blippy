@@ -71,7 +71,8 @@ React 19, Next.js (App Router), TypeScript (strict), Tailwind CSS v4, shadcn/ui 
 - [docs/discovery/](docs/discovery/) — One discovery doc per feature: goals, decisions, open questions.
 - [docs/DATA_MODEL.md](docs/DATA_MODEL.md) — Tables and relationships.
 - [docs/Testing.md](docs/Testing.md) — Unit and E2E testing.
-- [docs/FUTURE.md](docs/FUTURE.md) — Later phases (SRS, moves, auth, Swift, workflows).
+- [docs/CHANGELOG.md](docs/CHANGELOG.md) — Completed work by version
+- [docs/FUTURE.md](docs/FUTURE.md) — Roadmap and ideas
 
 ## License
 

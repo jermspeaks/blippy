@@ -55,7 +55,7 @@ Capture pastes markdown -> `src/lib/markdown-links.ts` extracts links -> `src/li
 
 ## Docs convention
 
-Reference docs live in `docs/` (ARCHITECTURE, DATA_MODEL, Testing, FUTURE). `README.md` and `AGENTS.md` stay at the repo root.
+Reference docs live in `docs/` (ARCHITECTURE, DATA_MODEL, Testing, FUTURE, CHANGELOG). `README.md` and `AGENTS.md` stay at the repo root.
 
 **For anything new (a feature, page, or notable change), write a discovery doc first or alongside the work:** copy `docs/discovery/_template.md` to `docs/discovery/<feature-name>.md`, fill it in, and add it to the index in `docs/README.md`. Record the goal, decisions made (and why), open questions, and the data/design touchpoints. Keep it updated as the feature evolves, and update `docs/DATA_MODEL.md` for schema changes.
 
